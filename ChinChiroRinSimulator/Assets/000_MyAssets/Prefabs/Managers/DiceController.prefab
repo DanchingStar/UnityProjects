@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1366266229698237453
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1366266229698237455}
+  - component: {fileID: 1366266229698237452}
+  m_Layer: 0
+  m_Name: DiceController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1366266229698237455
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1366266229698237453}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1366266229698237452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1366266229698237453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d1d6a3a29f0a06489f5656bcdc248a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  diceMaterials:
+  - {fileID: 2100000, guid: bb8040e782eb10442b32724db9964bc8, type: 2}
+  - {fileID: 2100000, guid: 2b51f5670a20e13468381930ce3f6fad, type: 2}
+  - {fileID: 2100000, guid: 297362bafaa626f449a0239e31da5514, type: 2}
+  eyeMaterials:
+  - {fileID: 2100000, guid: 78e46c7f216b9ac4a8bc153f47c6cac5, type: 2}
+  - {fileID: 2100000, guid: b747894516ec52d489d72616d62ce694, type: 2}
+  - {fileID: 2100000, guid: bc21eee36a2558e4489ce34b1cdbae15, type: 2}
+  - {fileID: 2100000, guid: 4bcebc2ba3d80944f868427d691caebc, type: 2}
+  - {fileID: 2100000, guid: 460952315ec832d4eb6bc86c3f03af65, type: 2}
+  - {fileID: 2100000, guid: c97497aa0b5623945a6a8da8768655d7, type: 2}
+  eyeSprites:
+  - {fileID: 21300000, guid: 0d7332e585e92dd4a886645b959940de, type: 3}
+  - {fileID: 21300000, guid: 4d62f1ee17af31844871158b5f8cf158, type: 3}
+  - {fileID: 21300000, guid: 0a1b181b9988aef44b66af1eab481169, type: 3}
+  - {fileID: 21300000, guid: aeb6b7c2c776ffb4ca661841ad32e352, type: 3}
+  - {fileID: 21300000, guid: 06eed5a8bf213b24496ecaecadecf303, type: 3}
+  - {fileID: 21300000, guid: b8b32f9a71bf3fd4686a5aa813885387, type: 3}
+  diceParentTransforms:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  dicePrefab: {fileID: 3443701483035492738, guid: 812f211f6e2859043bd9ebcf96936b61,
+    type: 3}
