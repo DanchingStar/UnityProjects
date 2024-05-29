@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8235117765634365210
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8235117765634365208}
+  - component: {fileID: 8235117765634365211}
+  m_Layer: 0
+  m_Name: EnemyManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8235117765634365208
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8235117765634365210}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8235117765634365211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8235117765634365210}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1b5de80100cccd4ab496289d0aed2cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _Cloud: {fileID: 7186572704560227389, guid: ba62161f2c04ee2488b660eeac95b2f7, type: 3}
+  _Bird: {fileID: 100207814746123313, guid: def8068dcaff178428b4cf0090bec3b6, type: 3}
+  _PlaneLeft: {fileID: 2869347452804373454, guid: b2b8a6a3fb93ffe4eb0cc6f3cd20128a, type: 3}
+  _PlaneRight: {fileID: 115077505552896323, guid: 82eaaa51d32b4644fb5409f5c0b56ab1, type: 3}
+  _Meteorite: {fileID: 2666526282542455493, guid: d88c88296fa10c54f90f4cbb73c75fe0, type: 3}
+  _SpaceDebri: {fileID: 0}
+  _Player: {fileID: 0}
+  _MaxExistCount: 5
+  _NowExistCount: 0
