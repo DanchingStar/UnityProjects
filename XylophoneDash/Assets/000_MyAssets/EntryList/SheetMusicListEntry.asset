@@ -1,0 +1,108 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 033c5aa71735d0e4aa1681a0e43c222a, type: 3}
+  m_Name: SheetMusicListEntry
+  m_EditorClassIdentifier: 
+  itemList:
+  - name: TestScore
+    sheetMusicFile: {fileID: 4900000, guid: 6e7f8c5fa60526f4abbe6b77d1dbcdb1, type: 3}
+    successMusicClip: {fileID: 8300000, guid: e912995024e28a046883c1e057f66710, type: 3}
+  - name: "\u304D\u3089\u304D\u3089\u661F"
+    sheetMusicFile: {fileID: 4900000, guid: 4900d9662d5ddad449fe90fbd86ab6a8, type: 3}
+    successMusicClip: {fileID: 8300000, guid: e912995024e28a046883c1e057f66710, type: 3}
+  - name: "\u3055\u304F\u3089\u3055\u304F\u3089"
+    sheetMusicFile: {fileID: 4900000, guid: e01825d38cd9fde4cb9cb8777f0df901, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 199997903fe253f43a2b067b802af869, type: 3}
+  - name: "\u866B\u306E\u58F0"
+    sheetMusicFile: {fileID: 4900000, guid: 7f6fbeba66859144e89d90e057d53978, type: 3}
+    successMusicClip: {fileID: 8300000, guid: d2fb2b0ee18529e46b9533a63fdef3b1, type: 3}
+  - name: "\u3080\u3059\u3093\u3067\u3072\u3089\u3044\u3066"
+    sheetMusicFile: {fileID: 4900000, guid: 57ffb2cb6b6635e459b5dd1914ddd84f, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 3af9461a6b98501449db5c9f378f7979, type: 3}
+  - name: "\u7DDA\u8DEF\u306F\u7D9A\u304F\u3088\u3069\u3053\u307E\u3067\u3082"
+    sheetMusicFile: {fileID: 4900000, guid: 3b485a55a190f91459acbf037cc3680a, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 465a2d4c4cda344418fac41cd4e34d70, type: 3}
+  - name: "\u4E00\u9031\u9593"
+    sheetMusicFile: {fileID: 4900000, guid: db964b947ae3157429912ad3f8c62a5d, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 9546b4c094d160145a369cda1d080a21, type: 3}
+  - name: "\u3076\u3093\u3076\u3093\u3076\u3093"
+    sheetMusicFile: {fileID: 4900000, guid: ee6f8efbec65b1c4ca33ef5753ba64f2, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 955e01faf5892a24a985a5201000e91d, type: 3}
+  - name: "\u30A2\u30E1\u30A4\u30B8\u30F3\u30B0\u30FB\u30B0\u30EC\u30A4\u30B9"
+    sheetMusicFile: {fileID: 4900000, guid: a828224332c082d4490fc219fa9dd3af, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 2908a90e61f609a46a0046d27a00b124, type: 3}
+  - name: "\u86CD\u306E\u5149"
+    sheetMusicFile: {fileID: 4900000, guid: 451aaa0e6e0be3d4e8a3fc19a9d3fdcb, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 1e038700be4b7cc4d8b65a6b41b46adc, type: 3}
+  - name: "\u559C\u3073\u306E\u6B4C"
+    sheetMusicFile: {fileID: 4900000, guid: 02e94f4fee25aa949bafb102548ba4e6, type: 3}
+    successMusicClip: {fileID: 8300000, guid: e90667da005f66145ae55ea8d7add2d7, type: 3}
+  - name: "\u732B\u3075\u3093\u3058\u3083\u3063\u305F"
+    sheetMusicFile: {fileID: 4900000, guid: 4b0b78cd48922bd4eb9fef697b49b69b, type: 3}
+    successMusicClip: {fileID: 8300000, guid: b641a47c5297a0845ae05c5b4d8573d6, type: 3}
+  - name: "\u30A2\u30EB\u30D7\u30B9\u4E00\u4E07\u5C3A"
+    sheetMusicFile: {fileID: 4900000, guid: 3d45923cd531274488856234f943fe10, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 65de827c549fc93449b2ebfa0aa1c12e, type: 3}
+  - name: "\u30DC\u30EC\u30ED"
+    sheetMusicFile: {fileID: 4900000, guid: 9627b76ee6415f34f9c008c4fff81531, type: 3}
+    successMusicClip: {fileID: 8300000, guid: c48699c4ae15073449060aa9c983dd57, type: 3}
+  - name: "\u304D\u3088\u3057\u3053\u306E\u591C"
+    sheetMusicFile: {fileID: 4900000, guid: cfaf0d86d3e925c43b343e3afe5e9248, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 6a8e48ea9e8f97247b2d154b4667005d, type: 3}
+  - name: "\u5E78\u305B\u306A\u3089\u624B\u3092\u305F\u305F\u3053\u3046"
+    sheetMusicFile: {fileID: 4900000, guid: 41f7a3c07894cf24384488bb6f3807a8, type: 3}
+    successMusicClip: {fileID: 8300000, guid: da0b8400c80bf064294c9e22ba0a0edf, type: 3}
+  - name: "\u5927\u304D\u306A\u53E4\u6642\u8A08"
+    sheetMusicFile: {fileID: 4900000, guid: ff8cb094b01c4154d86641a81b931e2b, type: 3}
+    successMusicClip: {fileID: 8300000, guid: a6a3f1b8bd8e4334c94102bf13190474, type: 3}
+  - name: "\u9759\u304B\u306A\u6E56\u7554"
+    sheetMusicFile: {fileID: 4900000, guid: 623e941258e1603488f3070234a35245, type: 3}
+    successMusicClip: {fileID: 8300000, guid: ab5dc8d0f6a19ea4eab555b9da4d1975, type: 3}
+  - name: "\u65B0\u4E16\u754C\u3088\u308A"
+    sheetMusicFile: {fileID: 4900000, guid: 31a66f4c02c2be84294761e5082ab82d, type: 3}
+    successMusicClip: {fileID: 8300000, guid: b8e9a27058fe59f46b71f79320c0e162, type: 3}
+  - name: "\u6728\u661F"
+    sheetMusicFile: {fileID: 4900000, guid: 25bb70ccda9e6d74cbe0f21afcd9d912, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 1416f5a8b15bd9d4f8823ff8b6517320, type: 3}
+  - name: "\u3075\u308B\u3055\u3068"
+    sheetMusicFile: {fileID: 4900000, guid: ba812104b5b368b4f98fbb5826578edb, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 1231d6aadbc8df64b8ab3a0bc83eb8cd, type: 3}
+  - name: "\u30E2\u30EB\u30C0\u30A6"
+    sheetMusicFile: {fileID: 4900000, guid: eafb7e0814b6e494dac5b8df860ef81c, type: 3}
+    successMusicClip: {fileID: 8300000, guid: a33d8e4f425058649b305a87645df566, type: 3}
+  - name: "\u96EA"
+    sheetMusicFile: {fileID: 4900000, guid: 722244992593dcc4aa83293d4f09bca2, type: 3}
+    successMusicClip: {fileID: 8300000, guid: f912ea7c0fd3e894eb5bf4b6a1855af5, type: 3}
+  - name: "\u30AF\u30E9\u30EA\u30CD\u30C3\u30C8\u3092\u3053\u308F\u3057\u3061\u3083\u3063\u305F"
+    sheetMusicFile: {fileID: 4900000, guid: a030705a7c9689d45855cec18f7667f2, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 4aea69f1c2bd1974f93acd02ef1df1a8, type: 3}
+  - name: "\u304A\u8A95\u751F\u65E5\u306E\u3046\u305F"
+    sheetMusicFile: {fileID: 4900000, guid: 2b031bbeb0a9f16499f15e3d439e89f0, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 91ad92606af218f4d9e7aed5786dfdd6, type: 3}
+  - name: "\u82B1"
+    sheetMusicFile: {fileID: 4900000, guid: 02f1200383409a34b8ceb6667aed88f5, type: 3}
+    successMusicClip: {fileID: 8300000, guid: e52118be4ef94044eb7e8e106d502783, type: 3}
+  - name: "\u3057\u3083\u307C\u3093\u7389"
+    sheetMusicFile: {fileID: 4900000, guid: 88a875ee80c79884685338b0b636564d, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 89292127111df6641816ddac8481f48a, type: 3}
+  - name: "\u6B4C\u5287\u300C\u30AB\u30EB\u30E1\u30F3\u300D\u3088\u308A\u524D\u594F\u66F2"
+    sheetMusicFile: {fileID: 4900000, guid: 628bde17f73b49448975afd29af870f0, type: 3}
+    successMusicClip: {fileID: 8300000, guid: af8a9b27263b8b544988fe7543631e7b, type: 3}
+  - name: "\u30A8\u30F3\u30BF\u30FC\u30C6\u30A4\u30CA\u30FC"
+    sheetMusicFile: {fileID: 4900000, guid: bb935b45b2be4a54282afd0e52acc8eb, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 60d5ba3cb4664f045acbd75ad34f0cd3, type: 3}
+  - name: "\u5A01\u98A8\u5802\u3005"
+    sheetMusicFile: {fileID: 4900000, guid: e40f9cd5319701c4f98481de45d418c0, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 5a23eddc4b4257748a13b5be973a22cd, type: 3}
+  - name: "\u30E1\u30CC\u30A8\u30C3\u30C8"
+    sheetMusicFile: {fileID: 4900000, guid: 5f7061ef89ee51b42917124a241de2a1, type: 3}
+    successMusicClip: {fileID: 8300000, guid: 5dee1270422ad174a8416ae11997eaa6, type: 3}

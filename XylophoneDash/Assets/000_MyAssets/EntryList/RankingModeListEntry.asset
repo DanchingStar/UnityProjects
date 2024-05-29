@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2d0a3877092a7f47b5f4cd7bb0f1128, type: 3}
+  m_Name: RankingModeListEntry
+  m_EditorClassIdentifier: 
+  itemList:
+  - key: R0_N0_KiraKiraBoshi
+    sheetMusicName: "\u304D\u3089\u304D\u3089\u661F"
+    gameLevel: 1
+    unlockStageNumber: 0
+  - key: R1_H0_AmazingGrace
+    sheetMusicName: "\u30A2\u30E1\u30A4\u30B8\u30F3\u30B0\u30FB\u30B0\u30EC\u30A4\u30B9"
+    gameLevel: 2
+    unlockStageNumber: 7
+  - key: R2_V0_TheFleaWaltz
+    sheetMusicName: "\u732B\u3075\u3093\u3058\u3083\u3063\u305F"
+    gameLevel: 3
+    unlockStageNumber: 10
+  - key: R3_N1_GrandfathersClock
+    sheetMusicName: "\u5927\u304D\u306A\u53E4\u6642\u8A08"
+    gameLevel: 1
+    unlockStageNumber: 15
+  - key: R4_H1_Jupiter
+    sheetMusicName: "\u6728\u661F"
+    gameLevel: 2
+    unlockStageNumber: 18
+  - key: R5_V1_Snow
+    sheetMusicName: "\u96EA"
+    gameLevel: 3
+    unlockStageNumber: 21
