@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d24744bac3391a64f9493314b7b2d434, type: 3}
+  m_Name: ItemListEntity
+  m_EditorClassIdentifier: 
+  itemList:
+  - type: 0
+    sprite: {fileID: 0}
+    unionGroup: 0
+  - type: 1
+    sprite: {fileID: 21300000, guid: 370073f1dc533d448ab884df85a5813a, type: 3}
+    unionGroup: 0
+  - type: 2
+    sprite: {fileID: 21300000, guid: 8ac7efc00afa5cb48832b13c890678ae, type: 3}
+    unionGroup: 0
+  - type: 3
+    sprite: {fileID: 21300000, guid: 3632e99aa8a16f14dba1fbe0fdc51595, type: 3}
+    unionGroup: 0
+  - type: 4
+    sprite: {fileID: 21300000, guid: b72827c99fed46f4482b317c0c3294fd, type: 3}
+    unionGroup: 0
+  - type: 5
+    sprite: {fileID: 21300000, guid: ed6369de77e4cc944b50ba9417726cc8, type: 3}
+    unionGroup: 0
+  - type: 6
+    sprite: {fileID: 21300000, guid: c839e6cbf1b404349b7b82f3829fedc8, type: 3}
+    unionGroup: 0
+  - type: 7
+    sprite: {fileID: 21300000, guid: e40faa01160d142458eb160d2ce5d9f6, type: 3}
+    unionGroup: 0
+  - type: 8
+    sprite: {fileID: 21300000, guid: b56d416984a524f45b5a90103bf5a07b, type: 3}
+    unionGroup: 1
+  - type: 9
+    sprite: {fileID: 21300000, guid: 6aaa101ba58a25548bdeca5d01286ce8, type: 3}
+    unionGroup: 1
+  - type: 10
+    sprite: {fileID: 21300000, guid: 9bac4fb469eef544d94ad1b576a9534d, type: 3}
+    unionGroup: 0
+  - type: 11
+    sprite: {fileID: 21300000, guid: 980f47ddab0c7d34ab69c6218a71c49a, type: 3}
+    unionGroup: 2
+  - type: 12
+    sprite: {fileID: 21300000, guid: 5a424429a311efa46b6e45d234fe8932, type: 3}
+    unionGroup: 2
+  - type: 13
+    sprite: {fileID: 21300000, guid: 0a531bb572bf479418d31475c3b3eccc, type: 3}
+    unionGroup: 2
+  - type: 14
+    sprite: {fileID: 21300000, guid: 738ff991c85662a4fa21aabecc7dbb3c, type: 3}
+    unionGroup: 0
+  - type: 15
+    sprite: {fileID: 21300000, guid: a83fbb684ea8b694a91769bad4cf0135, type: 3}
+    unionGroup: 0
+  - type: 16
+    sprite: {fileID: 21300000, guid: 32c8d6363d38cc34587b44b29f7dce30, type: 3}
+    unionGroup: 0
+  - type: 17
+    sprite: {fileID: 21300000, guid: 5a1a08b63d65bc44baa2350b89d63775, type: 3}
+    unionGroup: 0
+  - type: 18
+    sprite: {fileID: 21300000, guid: 7636ec50cb66a404fbcfbb04fe9bb62c, type: 3}
+    unionGroup: 0
