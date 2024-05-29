@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a401160bfe56a324fbce91ba3eefaf71, type: 3}
+  m_Name: TextListEntry
+  m_EditorClassIdentifier: 
+  textList:
+  - stage: 1
+    stageNameTextLine1: "\u30B9\u30DD\u30FC\u30C4\u30DC\u30FC\u30EB48"
+    stageNameTextLine2: 
+    stageIntroductionTextLine1: "\u30DC\u30FC\u30EB\u3092\u30AD\u30EC\u30A4\u306B\u4E26\u3079\u3066"
+    stageIntroductionTextLine2: "\u30E1\u30C0\u30EB\u3092\u30B2\u30C3\u30C8\uFF01\uFF01"
+    stageIntroductionTextLine3: 
+  - stage: 2
+    stageNameTextLine1: "\u3058\u3083\u3093\u3051\u3093\u91CE\u90CE"
+    stageNameTextLine2: 
+    stageIntroductionTextLine1: "\u3058\u3083\u3093\u3051\u3093\u52DD\u8CA0\uFF01"
+    stageIntroductionTextLine2: "\u30B3\u30A4\u30C4\u306B\u52DD\u3063\u3066"
+    stageIntroductionTextLine3: "\u30E1\u30C0\u30EB\u3092\u304F\u3059\u306D\u308D\uFF01\uFF01"
+  - stage: 3
+    stageNameTextLine1: "\u30E1\u30C0\u30EB\u843D\u3068\u3057"
+    stageNameTextLine2: "\uFF5E777\u306E\u305D\u306E\u5148\u3078\uFF5E"
+    stageIntroductionTextLine1: "\u901A\u79F0\u300C\u30D7\u30C3\u30B7\u30E3\u30FC\u300D"
+    stageIntroductionTextLine2: "\u6570\u5B57\u304C\u305D\u308D\u3048\u3070"
+    stageIntroductionTextLine3: "\u30DC\u30FC\u30CA\u30B9\u30B2\u30C3\u30C8\uFF01"
+  - stage: 4
+    stageNameTextLine1: "\u30B9\u30DE\u30FC\u30C8\u30DC\u30FC\u30EB"
+    stageNameTextLine2: "\uFF5E\u30D5\u30EB\u30FC\u30C4\u30D3\u30F3\u30B4\uFF5E"
+    stageIntroductionTextLine1: "\u6614\u61D0\u304B\u3057\u306E\u30EC\u30C8\u30ED\u30B2\u30FC\u30E0\uFF01"
+    stageIntroductionTextLine2: "\u6C7A\u3081\u3089\u308C\u305F\u6301\u3061\u7403\u3067"
+    stageIntroductionTextLine3: "\u305F\u304F\u3055\u3093BINGO\u3092\u6C7A\u3081\u3088\u3046\uFF01"
