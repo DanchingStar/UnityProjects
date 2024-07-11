@@ -177,9 +177,9 @@ public class MahjongManager : MonoBehaviour
     {
         None,
         SuRenKo,
+        HyakuManGoku,
         DaiShaRin,
         BeniKujaku,
-        HyakuManGoku,
         DaiChiShin,
     }
 
@@ -1008,7 +1008,8 @@ public class MahjongManager : MonoBehaviour
                     {
                         // 役満のときの条件
                         YakumanKind yakuman = CheckYakuman(playerTehais[0].GetTehais(), playerTehais[0].GetNakis(), PaiKinds.None_00);
-                        if(yakuman != YakumanKind.None)
+                        YakumanOfLocalKind local = CheckLocalYakuman(playerTehais[0].GetTehais(), playerTehais[0].GetNakis(), PaiKinds.None_00);
+                        if (yakuman != YakumanKind.None || local != YakumanOfLocalKind.None)
                         {
                             //Debug.Log($"ActionTurn : Yakuman Tsumo");
                             playerTehais[0].SetTsumoPaiFire(true);
@@ -1061,7 +1062,8 @@ public class MahjongManager : MonoBehaviour
             {
                 // 役満のときの条件
                 YakumanKind yakuman = CheckYakuman(playerTehais[0].GetTehais(), playerTehais[0].GetNakis(), sutePai);
-                if (yakuman != YakumanKind.None)
+                YakumanOfLocalKind local = CheckLocalYakuman(playerTehais[0].GetTehais(), playerTehais[0].GetNakis(), sutePai);
+                if (yakuman != YakumanKind.None || local != YakumanOfLocalKind.None)
                 {
                     //Debug.Log($"ActionTurn : Yakuman Ron");
                     playerKawas[playerIndex - 1].SetRonPaiAura(true);
@@ -1604,6 +1606,37 @@ public class MahjongManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 和了った手牌からローカル役満をチェックする
+    /// </summary>
+    /// <param name="_tehaiList"></param>
+    /// <param name="_nakiList"></param>
+    /// <param name="_ronPai"></param>
+    /// <returns></returns>
+    private YakumanOfLocalKind CheckLocalYakuman(List<PaiStatus> _tehaiList, List<MentsuStatus> _nakiList, PaiKinds _ronPai)
+    {
+        YakumanOfLocalKind result = YakumanOfLocalKind.None;
+
+        int[] _tehaiInformation = new int[System.Enum.GetValues(typeof(PaiKinds)).Length];
+
+        foreach (var item in _tehaiList) //手牌のリストを作成
+        {
+            _tehaiInformation[(int)item.thisKind]++;
+        }
+        if (_ronPai != PaiKinds.None_00)
+        {
+            _tehaiInformation[(int)_ronPai]++;
+        }
+
+        if (CheckYakuSuRenKo(_tehaiInformation, _nakiList)) result = YakumanOfLocalKind.SuRenKo;
+        else if (CheckYakuHyakuManGoku(_tehaiInformation, _nakiList)) result = YakumanOfLocalKind.HyakuManGoku;
+        else if (CheckYakuDaiShaRin(_tehaiInformation, _nakiList)) result = YakumanOfLocalKind.DaiShaRin;
+        else if (CheckYakuBeniKujaku(_tehaiInformation, _nakiList)) result = YakumanOfLocalKind.BeniKujaku;
+        else if (CheckYakuDaiChiShin(_tehaiInformation, _nakiList)) result = YakumanOfLocalKind.DaiChiShin;
+
+        return result;
+    }
+
+    /// <summary>
     /// 和了った役に天和が含まれるか確認する
     /// </summary>
     /// <param name="_nakiList"></param>
@@ -1630,7 +1663,20 @@ public class MahjongManager : MonoBehaviour
     /// <returns></returns>
     private bool CheckYakuSuAnKo(int[] _tehaiInformation, List<MentsuStatus> _nakiList, PaiKinds _ronPai)
     {
-        if (_nakiList.Count != 0) return false; //面前のとき専用
+        //if (_nakiList.Count != 0) return false; //面前のとき専用
+
+        int ankanCount = 0;
+        foreach(var item in _nakiList)
+        {
+            if(item.nakiKinds == NakiKinds.Ankan)
+            {
+                ankanCount++;
+            }
+            else
+            {
+                return false;
+            }
+        }
 
         List<PaiKinds> ankoList = new List<PaiKinds>(); //暗刻のリストを作成
         foreach (var item in _tehaiInformation)
@@ -1641,7 +1687,7 @@ public class MahjongManager : MonoBehaviour
             }
         }
 
-        if (ankoList.Count != 4) return false; //暗刻(出和了りの明刻も含む)が4個出ないときをはじく
+        if (ankoList.Count + ankanCount != 4) return false; //暗刻(出和了りの明刻も含む)と暗槓の和が4個でないときをはじく
 
         if (_ronPai == PaiKinds.None_00) //ツモのとき
         {
@@ -1813,6 +1859,8 @@ public class MahjongManager : MonoBehaviour
             }
 
         }
+
+        if (CheckYakuDaiChiShin(_tehaiInformation, _nakiList)) return false; //大七星との重複を防ぐ
 
         return true;
     }
@@ -1986,6 +2034,203 @@ public class MahjongManager : MonoBehaviour
         {
             return kouho;
         }
+    }
+
+    /// <summary>
+    /// 和了った役に四連刻が含まれるか確認する
+    /// </summary>
+    /// <param name="_tehaiInformation"></param>
+    /// <param name="_nakiList"></param>
+    /// <returns></returns>
+    private bool CheckYakuSuRenKo(int[] _tehaiInformation, List<MentsuStatus> _nakiList)
+    {
+        List<PaiKinds> kootsuList = new List<PaiKinds>(); //暗刻のリストを作成
+
+        foreach (var item in _nakiList)
+        {
+            if (item.mentsuKind == MentsuKinds.Kootsu || item.mentsuKind == MentsuKinds.Kantsu)
+            {
+                kootsuList.Add(item.minimumPai);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        foreach (var item in _tehaiInformation)
+        {
+            if (item == 3)
+            {
+                kootsuList.Add((PaiKinds)item);
+            }
+        }
+
+        if (kootsuList.Count != 4) return false; //刻子が4個でないときをはじく
+
+        kootsuList.Sort((a, b) => a.CompareTo(b)); //刻子リストをソート
+
+        if (kootsuList[0] >= PaiKinds.None_30) //字牌ならはじく
+        {
+            return false;
+        }
+
+        for (int i = 0; i < kootsuList.Count - 1; i++)
+        {
+            if (kootsuList[i] + 1 != kootsuList[i + 1]) //次の要素が隣かを確認
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 和了った役に百万石が含まれるか確認する
+    /// </summary>
+    /// <param name="_tehaiInformation"></param>
+    /// <param name="_nakiList"></param>
+    /// <returns></returns>
+    private bool CheckYakuHyakuManGoku(int[] _tehaiInformation, List<MentsuStatus> _nakiList)
+    {
+        if (CheckYakuChinIiSo(_tehaiInformation, _nakiList) != IroKinds.Manzu) return false; //萬子限定
+
+        int manzuCounter = 0;
+
+        foreach (var item in _nakiList)
+        {
+            if (item.mentsuKind == MentsuKinds.Juntsu)
+            {
+                int centerNum = ((int)item.minimumPai % 10) + 1;
+                manzuCounter += (centerNum * 3);
+            }
+            else if (item.mentsuKind == MentsuKinds.Kootsu)
+            {
+                int paiNum = (int)item.minimumPai % 10;
+                manzuCounter += (paiNum * 3);
+            }
+            else if (item.mentsuKind == MentsuKinds.Kantsu)
+            {
+                int paiNum = (int)item.minimumPai % 10;
+                manzuCounter += (paiNum * 4);
+            }
+        }
+
+        for (int i = (int)PaiKinds.M1; i <= (int)PaiKinds.M9; i++)
+        {
+            if (_tehaiInformation[i] > 0)
+            {
+                manzuCounter += (_tehaiInformation[i] * i);
+            }
+        }
+
+        if (manzuCounter >= 100)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 和了った役に大車輪が含まれるか確認する
+    /// </summary>
+    /// <param name="_tehaiInformation"></param>
+    /// <param name="_nakiList"></param>
+    /// <returns></returns>
+    private bool CheckYakuDaiShaRin(int[] _tehaiInformation, List<MentsuStatus> _nakiList)
+    {
+        if (_nakiList.Count != 0) return false; //門前限定
+
+        for (int i = (int)PaiKinds.P2; i <= (int)PaiKinds.P8; i++)
+        {
+            if (_tehaiInformation[i] != 2)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 和了った役に紅孔雀が含まれるか確認する
+    /// </summary>
+    /// <param name="_tehaiInformation"></param>
+    /// <param name="_nakiList"></param>
+    /// <returns></returns>
+    private bool CheckYakuBeniKujaku(int[] _tehaiInformation, List<MentsuStatus> _nakiList)
+    {
+        List<PaiKinds> redList = new List<PaiKinds>();
+        redList.Add(PaiKinds.S1);
+        redList.Add(PaiKinds.S5);
+        redList.Add(PaiKinds.S7);
+        redList.Add(PaiKinds.S9);
+        redList.Add(PaiKinds.J7);
+
+        foreach (var nakiItem in _nakiList)
+        {
+            if (nakiItem.mentsuKind == MentsuKinds.Kootsu || nakiItem.mentsuKind == MentsuKinds.Kantsu)
+            {
+                bool okFlg = false;
+                foreach (var redItem in redList)
+                {
+                    if (redItem == nakiItem.minimumPai)
+                    {
+                        okFlg = true;
+                        break;
+                    }
+                }
+                if (!okFlg) return false;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        for (int i = 0; i < _tehaiInformation.Length; i++)
+        {
+            if (_tehaiInformation[i] > 0)
+            {
+                bool okFlg = false;
+                foreach (var redItem in redList)
+                {
+                    if (redItem == (PaiKinds)i)
+                    {
+                        okFlg = true;
+                        break;
+                    }
+                }
+                if (!okFlg) return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 和了った役に大七星が含まれるか確認する
+    /// </summary>
+    /// <param name="_tehaiInformation"></param>
+    /// <param name="_nakiList"></param>
+    /// <returns></returns>
+    private bool CheckYakuDaiChiShin(int[] _tehaiInformation, List<MentsuStatus> _nakiList)
+    {
+        if (_nakiList.Count != 0) return false; //門前限定
+
+        for (int i = (int)PaiKinds.J1; i <= (int)PaiKinds.J7; i++)
+        {
+            if (_tehaiInformation[i] != 2)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
