@@ -1569,6 +1569,34 @@ public class MahjongManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 局が和了で終わったとき
+    /// </summary>
+    /// <param name="_ronPai">ツモったときはnull</param>
+    private void KyokuFinishOfAgari(PaiStatus _ronPai)
+    {
+        nowGameTurn = GameTurn.Finish_Agari;
+
+        if (_ronPai == null) //ツモ和了
+        {
+            uiManager.ReceptionMahjongManagerForAgari(PlayerKind.Player, null);
+        }
+        else ////ロン和了
+        {
+            uiManager.ReceptionMahjongManagerForAgari(PlayerKind.Player, _ronPai);
+        }
+    }
+
+    /// <summary>
+    /// 局が流局で終わったとき
+    /// </summary>
+    /// <param name="_kind">通常の流局はNone</param>
+    private void KyokuFinishOfRyuukyoku(RyuukyokuOfTochuu _kind)
+    {
+        nowGameTurn = GameTurn.Finish_Ryuukyoku;
+        uiManager.ReceptionMahjongManagerForRyuukyoku(_kind);
+    }
+
+    /// <summary>
     /// 和了った手牌から役満をチェックする
     /// </summary>
     /// <param name="_tehaiList"></param>
@@ -1635,6 +1663,9 @@ public class MahjongManager : MonoBehaviour
 
         return result;
     }
+
+
+#region 役の判定
 
     /// <summary>
     /// 和了った役に天和が含まれるか確認する
@@ -2233,33 +2264,7 @@ public class MahjongManager : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 局が和了で終わったとき
-    /// </summary>
-    /// <param name="_ronPai">ツモったときはnull</param>
-    private void KyokuFinishOfAgari(PaiStatus _ronPai)
-    {
-        nowGameTurn = GameTurn.Finish_Agari;
-
-        if (_ronPai == null) //ツモ和了
-        {
-            uiManager.ReceptionMahjongManagerForAgari(PlayerKind.Player, null);
-        }
-        else ////ロン和了
-        {
-            uiManager.ReceptionMahjongManagerForAgari(PlayerKind.Player, _ronPai);
-        }
-    }
-
-    /// <summary>
-    /// 局が流局で終わったとき
-    /// </summary>
-    /// <param name="_kind">通常の流局はNone</param>
-    private void KyokuFinishOfRyuukyoku(RyuukyokuOfTochuu _kind)
-    {
-        nowGameTurn = GameTurn.Finish_Ryuukyoku;
-        uiManager.ReceptionMahjongManagerForRyuukyoku(_kind);
-    }
+#endregion
 
 #region 受信
 
