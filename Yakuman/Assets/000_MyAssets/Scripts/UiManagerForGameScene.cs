@@ -3,8 +3,14 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-public class UiManager : MonoBehaviour
+public class UiManagerForGameScene : MonoBehaviour
 {
+    [SerializeField] private GameObject uiForBeforeGame;
+    [SerializeField] private GameObject uiForPlayingGame;
+
+    [SerializeField] private TextMeshProUGUI gameModeText;
+    [SerializeField] private TextMeshProUGUI gameModeInformationText;
+
     [SerializeField] private TextMeshProUGUI kyokuText;
     [SerializeField] private TextMeshProUGUI honbaText;
     [SerializeField] private TextMeshProUGUI nokoriCountText;
@@ -14,13 +20,108 @@ public class UiManager : MonoBehaviour
 
     private UiTurnActionPrefab activeUiTurnActionPrefab = null;
 
+    private void Start()
+    {
+    }
+
     /// <summary>
     /// UIの値や表示をリセットする
     /// </summary>
     public void ResetUi()
     {
+        ChangeUiForPlayingGameSetActive(true);
         ReceptionPlayerSute();
         ChangeKyokuText("");
+    }
+
+    /// <summary>
+    /// ゲーム中のUIを表示/非表示を変える
+    /// </summary>
+    /// <param name="_flg"></param>
+    private void ChangeUiForPlayingGameSetActive(bool _flg)
+    {
+        uiForPlayingGame.SetActive(_flg);
+        uiForBeforeGame.SetActive(!_flg);
+    }
+
+    /// <summary>
+    /// ゲーム開始前のUIを表示する
+    /// </summary>
+    public void DisplayBeforeGame()
+    {
+        ChangeGameModeText(GameModeManager.Instance.GetGameMode());
+        ChangeGameModeInformationText(GameModeManager.Instance.GetGameMode());
+
+        ChangeUiForPlayingGameSetActive(false);
+    }
+
+    /// <summary>
+    /// ゲームモードのテキストを変更する
+    /// </summary>
+    /// <param name="_str"></param>
+    private void ChangeGameModeText(string _str)
+    {
+        gameModeText.text = _str;
+    }
+
+    /// <summary>
+    /// ゲームモードのテキストを変更する
+    /// </summary>
+    /// <param name="_gameMode"></param>
+    private void ChangeGameModeText(GameModeManager.GameMode _gameMode)
+    {
+        ChangeGameModeText(_gameMode.ToString());
+    }
+
+    /// <summary>
+    /// ゲームモードの詳細情報のテキストを変更する
+    /// </summary>
+    /// <param name="_str"></param>
+    private void ChangeGameModeInformationText(string _str)
+    {
+        gameModeInformationText.text = _str;
+    }
+
+    /// <summary>
+    /// ゲームモードの詳細情報のテキストを変更する
+    /// </summary>
+    /// <param name="_str"></param>
+    private void ChangeGameModeInformationText(GameModeManager.GameMode _gameMode)
+    {
+        string str = "";
+
+        switch (_gameMode)
+        {
+            case GameModeManager.GameMode.TimeAttack:
+                {
+                    var status = GameModeManager.Instance.GetStatusForTimeAttack();
+                    str += $"配牌サポート : ";
+                    str += status.supportFlg ? "アリ\n" : "ナシ\n";
+                    str += $"クリア必要回数 : {status.needClearCount}回";
+                }
+                break;
+            case GameModeManager.GameMode.Puzzle:
+                {
+                    var status = GameModeManager.Instance.GetStatusForPuzzle();
+                    str += $"ステージ : {status.stageNumber}";
+                }
+                break;
+            case GameModeManager.GameMode.Free:
+                {
+                    var status = GameModeManager.Instance.GetStatusForFree();
+                    str += $"配牌サポート : ";
+                    str += status.supportFlg ? "アリ\n" : "ナシ\n";
+                }
+                break;
+            case GameModeManager.GameMode.Debug:
+                {
+                    var status = GameModeManager.Instance.GetStatusForDebug();
+                    str += $"haipai : No.{status.haipai}\nyama : No.{status.yama}\nrinshan : No.{status.rinshan}";
+                }
+                break;
+        }
+
+        ChangeGameModeInformationText(str);
     }
 
     /// <summary>
@@ -193,15 +294,6 @@ public class UiManager : MonoBehaviour
         //Debug.Log(str);
     }
 
-    ///// <summary>
-    ///// 局が終わったときに表示するUIを表示する
-    ///// </summary>
-    //private void DisplayKyokuFinish()
-    //{
-    //    var prefab = InstatinateUiKyokuFinishPanelPrefab();
-    //    prefab.SetMyStatus();
-    //}
-
     /// <summary>
     /// MahjongManagerから流局を受信する
     /// </summary>
@@ -236,12 +328,49 @@ public class UiManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 自ターンにプレイヤーがカンをして選択したことを受信する
+    /// </summary>
+    public void ReceptionPlayerSelectKan()
+    {
+        if (activeUiTurnActionPrefab != null)
+        {
+            activeUiTurnActionPrefab.ReceptionUiManagerForDestroyMe();
+            activeUiTurnActionPrefab = null;
+        }
+    }
+
+    /// <summary>
     /// 表示中の自ターンアクションのPrefabを返すゲッター
     /// </summary>
     /// <returns></returns>
     public UiTurnActionPrefab GetActiveUiTurnActionPrefab()
     {
         return activeUiTurnActionPrefab;
+    }
+
+    /// <summary>
+    /// ゲームスタートボタンを押したとき
+    /// </summary>
+    public void PushGameStartButton()
+    {
+        MahjongManager.Instance.GameStart();
+        GameModeManager.Instance.ReceptionGameStart();
+    }
+
+    /// <summary>
+    /// メニューへ戻るボタンを押したとき
+    /// </summary>
+    public void PushGoToMenuSceneButton()
+    {
+        MoveMenuScene();
+    }
+
+    /// <summary>
+    /// メニューシーンへ移動する
+    /// </summary>
+    private void MoveMenuScene()
+    {
+        FadeManager.Instance.LoadScene("Menu", 0.5f);
     }
 
 }

@@ -5,6 +5,7 @@ using UnityEditor;
 
 public class PaiPrefab : MonoBehaviour
 {
+    [SerializeField] private MeshRenderer[] meshOfNakiObjects;
     [SerializeField] private ParticleSystem particleFire;
     [SerializeField] private ParticleSystem particleAura;
 
@@ -25,6 +26,10 @@ public class PaiPrefab : MonoBehaviour
     private Color COLOR_DEFAULT;
     private Color COLOR_GREY = Color.grey;
 
+    private Color COLOR_FADE= new Color(0, 0, 0, 0);
+
+    private bool nakiObjectActiveFlg;
+
     private bool interactableTapFlg;
 
     private bool startFinifhFlg = false;
@@ -38,6 +43,19 @@ public class PaiPrefab : MonoBehaviour
         meshRendererOfPai = GetComponent<MeshRenderer>();
         COLOR_DEFAULT = meshRendererOfPai.material.color;
         interactableTapFlg = true;
+
+        PlayNakiObjects(false);
+    }
+
+    private void Update()
+    {
+        if (nakiObjectActiveFlg)
+        {
+            foreach (var mesh in meshOfNakiObjects)
+            {
+                mesh.material.color = Color.Lerp(Color.red, Color.yellow, Mathf.PingPong(Time.time, 1));
+            }
+        }
     }
 
     /// <summary>
@@ -168,6 +186,23 @@ public class PaiPrefab : MonoBehaviour
         {
             meshRendererOfPai.material.color = COLOR_DEFAULT;
             meshRendererOfGara.material.color = COLOR_DEFAULT;
+        }
+    }
+
+    /// <summary>
+    /// 鳴きができる牌が出てきたときに目立たせるオブジェクトを出すフラグを変える
+    /// </summary>
+    /// <param name="_flg"></param>
+    public void PlayNakiObjects(bool _flg)
+    {
+        nakiObjectActiveFlg = _flg;
+
+        if (!nakiObjectActiveFlg)
+        {
+            foreach (var mesh in meshOfNakiObjects)
+            {
+                mesh.material.color = COLOR_FADE;
+            }
         }
     }
 

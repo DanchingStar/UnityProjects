@@ -44,7 +44,7 @@ public class ChiSelectButtonPrefab : MonoBehaviour
     private void SetImages()
     {
         paiImages[0].sprite = MahjongManager.Instance.GetGaraSprite(paiKind);
-        if(nakiKind == MahjongManager.NakiKinds.ChiNumSmall)
+        if(nakiKind == MahjongManager.NakiKinds.ChiNumLow)
         {
             paiImages[1].sprite = MahjongManager.Instance.GetGaraSprite(paiKind + 1);
             paiImages[2].sprite = MahjongManager.Instance.GetGaraSprite(paiKind + 2);
@@ -54,7 +54,7 @@ public class ChiSelectButtonPrefab : MonoBehaviour
             paiImages[1].sprite = MahjongManager.Instance.GetGaraSprite(paiKind - 1);
             paiImages[2].sprite = MahjongManager.Instance.GetGaraSprite(paiKind + 1);
         }
-        else if (nakiKind == MahjongManager.NakiKinds.ChiNumBig)
+        else if (nakiKind == MahjongManager.NakiKinds.ChiNumHigh)
         {
             paiImages[1].sprite = MahjongManager.Instance.GetGaraSprite(paiKind - 2);
             paiImages[2].sprite = MahjongManager.Instance.GetGaraSprite(paiKind - 1);

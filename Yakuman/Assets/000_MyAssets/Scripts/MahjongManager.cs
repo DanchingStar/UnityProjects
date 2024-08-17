@@ -69,10 +69,11 @@ public class MahjongManager : MonoBehaviour
         PonFromToimen,
         PonFromKamicha,
         Chi,
-        ChiNumSmall,
+        ChiNumLow,
         ChiNumMiddle,
-        ChiNumBig,
+        ChiNumHigh,
         Ron,
+        Through,
     }
 
     /// <summary>色(萬子とか)の種類</summary>
@@ -98,14 +99,14 @@ public class MahjongManager : MonoBehaviour
     public enum GameTurn
     {
         Ready,
-        Ton_Tsumo,
-        Ton_Sute,
-        Nan_Tsumo,
-        Nan_Sute,
-        Sha_Tsumo,
-        Sha_Sute,
-        Pe_Tsumo,
-        Pe_Sute,
+        Player_Tsumo,
+        Player_Sute,
+        Shimocha_Tsumo,
+        Shimocha_Sute,
+        Toimen_Tsumo,
+        Toimen_Sute,
+        Kamicha_Tsumo,
+        Kamicha_Sute,
         Finish_Ryuukyoku,
         Finish_Agari,
     }
@@ -160,6 +161,7 @@ public class MahjongManager : MonoBehaviour
     {
         None,
         TenHo,
+        ChiHo,
         SuAnKo,
         SuKanTsu,
         DaiSanGen,
@@ -230,6 +232,38 @@ public class MahjongManager : MonoBehaviour
         }
     }
 
+    /// <summary>配牌サポート(タイムアタック用)</summary>
+    public class SupportSetForTimeAttack
+    {
+        public Rank rank;
+        public Yaku yaku;
+
+        public enum Rank
+        {
+            None,
+            A,
+            B,
+            C,
+        }
+
+        public enum Yaku
+        {
+            None,
+            SuAnKo,
+            SuKanTsu,
+            DaiSanGen,
+            SuShiHo,
+            TsuIiSo,
+            ChinRouTo,
+            RyuIiSo,
+            KokuShiMuSou,
+            ChuRenPoTo,
+            SuRenKo,
+            HyakuManGoku,
+            DaiShaRin,
+            BeniKujaku,
+        }
+    }
 
     #endregion
 
@@ -237,6 +271,7 @@ public class MahjongManager : MonoBehaviour
 
     private const int DEFAULT_MAISUU_TEHAI = 13;
     private const float TIME_TURN_INTERVAL = 0.5f;
+    private const float TIME_KAN_INTERVAL = 0.4f;
     private const int COUNT_FINISH_TSUMO = 70;
     public const int INDEX_ERROR = -1;
     public const int INDEX_NONE = -20;
@@ -258,14 +293,14 @@ public class MahjongManager : MonoBehaviour
 #else //縦画面
 
     private readonly Vector3 DEFAULT_POSITION_TEHAI_PLAYER = new Vector3(-13.48f, 9.2f, -22f);
-    private readonly Vector3 DEFAULT_POSITION_TEHAI_SHIMOCHA = new Vector3(16, 1.5f, -13f);
-    private readonly Vector3 DEFAULT_POSITION_TEHAI_TOIMEN = new Vector3(13.48f, 1.5f, 20f);
-    private readonly Vector3 DEFAULT_POSITION_TEHAI_KAMICHA = new Vector3(-16, 1.5f, 13f);
+    private readonly Vector3 DEFAULT_POSITION_TEHAI_SHIMOCHA = new Vector3(15.7f, 1.5f, -13f);
+    private readonly Vector3 DEFAULT_POSITION_TEHAI_TOIMEN = new Vector3(13.48f, 1.5f, 19f);
+    private readonly Vector3 DEFAULT_POSITION_TEHAI_KAMICHA = new Vector3(-15.7f, 1.5f, 13f);
 
     private readonly Vector3 DEFAULT_POSITION_NAKI_PLAYER = new Vector3(14.5f, 9.2f, -25f);
-    private readonly Vector3 DEFAULT_POSITION_NAKI_SHIMOCHA = new Vector3(13.66f, 1.5f, -13f);
-    private readonly Vector3 DEFAULT_POSITION_NAKI_TOIMEN = new Vector3(-11.14f, 1.5f, 20f);
-    private readonly Vector3 DEFAULT_POSITION_NAKI_KAMICHA = new Vector3(-13.66f, 1.5f, 13f);
+    private readonly Vector3 DEFAULT_POSITION_NAKI_SHIMOCHA = new Vector3(15.7f, 1.5f, 16.9f);
+    private readonly Vector3 DEFAULT_POSITION_NAKI_TOIMEN = new Vector3(-16.5f, 1.5f, 19f);
+    private readonly Vector3 DEFAULT_POSITION_NAKI_KAMICHA = new Vector3(-15.7f, 1.5f, -16.9f);
 
     private readonly Vector3 DEFAULT_POSITION_KAWA_PLAYER = new Vector3(-5f, 0.9f, -9.8f);
     private readonly Vector3 DEFAULT_POSITION_KAWA_SHIMOCHA = new Vector3(7.3f, 0.9f, -5f);
@@ -284,6 +319,11 @@ public class MahjongManager : MonoBehaviour
     private readonly Vector3 DEFAULT_ROTATE_KAMICHA_TEHAI = new Vector3(0, 270, 0);
     private readonly Vector3 DEFAULT_ROTATE_KAMICHA_KAWA = new Vector3(270, 0, 270);
     private readonly Vector3 DEFAULT_ROTATE_URA = new Vector3(90, 0, 0);
+
+    private readonly Vector3 DEFAULT_ROTATE_NAKI_PLAYER = new Vector3(0, 0, 0);
+    private readonly Vector3 DEFAULT_ROTATE_NAKI_SHIMOCHA = new Vector3(0, 270, 0);
+    private readonly Vector3 DEFAULT_ROTATE_NAKI_TOIMEN = new Vector3(0, 180, 0);
+    private readonly Vector3 DEFAULT_ROTATE_NAKI_KAMICHA = new Vector3(0, 90, 0);
 
     private readonly MentsuStatus MenzenM123 = new MentsuStatus(PaiKinds.M1, false, MentsuKinds.Juntsu, 0, NakiKinds.Menzen, IroKinds.Manzu, false);
     private readonly MentsuStatus MenzenM234 = new MentsuStatus(PaiKinds.M2, true, MentsuKinds.Juntsu, 0, NakiKinds.Menzen, IroKinds.Manzu, false);
@@ -351,13 +391,14 @@ public class MahjongManager : MonoBehaviour
 
     #region _Region【宣言(変数)】
 
-    [SerializeField] private UiManager uiManager;
+    [SerializeField] private UiManagerForGameScene uiManager;
     [SerializeField] private Transform paiParentTransform;
     [SerializeField] private GameObject paiPrefab;
     [SerializeField] private GameObject[] nakiPrefab;
     [SerializeField] private GameObject ankanPrefab;
     [SerializeField] private Material[] garaMaterials;
     [SerializeField] private Sprite[] garaSprites;
+    [SerializeField] private Sprite whiteSprite;
     [SerializeField] private PlayerTehai[] playerTehais;
     [SerializeField] private PlayerKawa[] playerKawas;
     [SerializeField] private Wanpai wanpai;
@@ -370,8 +411,13 @@ public class MahjongManager : MonoBehaviour
     private GameTurn nowGameTurn;
     private int nowTsumoCount;
 
-    private bool nakiWaitFlg;
+    private NakiKinds[] receptionNakiCheck;
+
+    private bool playerNakiWaitFlg;
+    private bool alreadyNakiFlg;
     private TurnActionKind turnActionFlg;
+
+    private int clearCount;
 
     private float gameTimer;
 
@@ -393,7 +439,7 @@ public class MahjongManager : MonoBehaviour
 
     private void Start()
     {
-
+        StartFunction();
     }
 
     private void Update()
@@ -401,50 +447,56 @@ public class MahjongManager : MonoBehaviour
         UpdateFunction();
     }
 
+    private void StartFunction()
+    {
+        uiManager.DisplayBeforeGame();
+
+        receptionNakiCheck = new NakiKinds[playerTehais.Length];
+    }
+
     /// <summary>
     /// Updateで走る関数
     /// </summary>
     private void UpdateFunction()
     {
-        if (nowGameTurn == GameTurn.Finish_Ryuukyoku)
+        if (nowGameTurn == GameTurn.Ready)
         {
             //何もせず、待ち
         }
-        else if (nowGameTurn == GameTurn.Ton_Sute)
+        else if (nowGameTurn == GameTurn.Finish_Ryuukyoku)
         {
-            NextGameTurn();
+            //何もせず、待ち
         }
-        else if (nowGameTurn != GameTurn.Ready && nowGameTurn != GameTurn.Ton_Tsumo)
+        else if (nowGameTurn == GameTurn.Finish_Agari)
+        {
+            //何もせず、待ち
+        }
+        //else if (nowGameTurn == GameTurn.Player_Sute)
+        //{
+        //    CheckNakiDoing();
+        //}
+        else if (nowGameTurn != GameTurn.Player_Tsumo)
         {
             gameTimer += Time.deltaTime;
 
             if (gameTimer > TIME_TURN_INTERVAL)
             {
-                if (GetNowTurnTsumo() && nowGameTurn != GameTurn.Ton_Tsumo)
+                if (GetNowTurnTsumo() && nowGameTurn != GameTurn.Player_Tsumo)
                 {
                     int playerIndex = (int)nowGameTurn / 2;
 
-                    bool thinkFlg = true; // CPUが思考してほしいならTrue
-                    if (thinkFlg)
+                    if (playerTehais[playerIndex].GetAbleTsumoAgari())
                     {
-                        playerTehais[playerIndex].SuteThink(); // 評価値を計算して捨てる
+                        KyokuFinishOfAgari(null, (PlayerKind)(playerIndex + 1));
                     }
                     else
                     {
-                        int paiIndex = 0; // この値で捨てる牌が決まる
-                        playerTehais[playerIndex].SuteMandatory(paiIndex, false); // 指定した牌を捨てる
+                        playerTehais[playerIndex].SuteThink(); // 評価値を計算して捨てる
                     }
                 }
                 else
                 {
-                    if (!nakiWaitFlg)
-                    {
-                        NextGameTurn();
-                    }
-                    else
-                    {
-                        return;
-                    }
+                    if (!playerNakiWaitFlg) CheckNakiDoing();
                 }
 
                 gameTimer = 0f;
@@ -455,18 +507,166 @@ public class MahjongManager : MonoBehaviour
     /// <summary>
     /// 牌山を作る
     /// </summary>
-    public void MakePaiYama()
+    /// <returns>正常に終えたらTrue</returns>
+    private bool MakePaiYama()
     {
-        ResetTransformObjects();
-        ResetPlayersTehaisAndKawas();
-        uiManager.ResetUi();
-
         paiyama = new List<PaiStatus>();
         nowPaiIndex = 0;
 
-        // 牌山を生成する
+        switch (GameModeManager.Instance.GetGameMode())
+        {
+            case GameModeManager.GameMode.TimeAttack:
+                {
+                    bool supportFlg = false;
+                    if (GameModeManager.Instance.GetStatusForTimeAttack().supportFlg) supportFlg = true;
+
+                    if (supportFlg)
+                    {
+                        SupportSetForTimeAttack supportSetForTimeAttack = new SupportSetForTimeAttack();
+                        supportSetForTimeAttack = LotterySupportSetForTimeAttack();
+                        List<PaiKinds> supportList = new List<PaiKinds>();
+                        supportList = GameModeManager.Instance.GetSupportList(supportSetForTimeAttack);
+
+                        // 牌山を生成する
+                        MakePaiyamaInit();
+
+                        // イカサマする。イカサマした牌の数が返り値
+                        int ikasamaCounter = IkasamaContentsForSupport(supportList);
+
+                        // イカサマした牌以外を混ぜる
+                        ShufflePaiYama(ikasamaCounter);
+
+                        // イカサマした場合、手牌を混ぜる
+                        if (ikasamaCounter > 0) ShufflePlayerTehai();
+
+                        // 混ぜた後に山を変えたければここ
+                        //IkasamaAfterVersion();
+
+                        if (supportSetForTimeAttack.yaku == SupportSetForTimeAttack.Yaku.SuKanTsu)
+                        {
+                            List<PaiKinds> rinsyanList = new List<PaiKinds>();
+                            rinsyanList.Add(supportList[0]);
+                            rinsyanList.Add(supportList[0]);
+                            rinsyanList.Add(supportList[0]);
+
+                            // 混ぜた後に嶺上牌を変えたければここ
+                            IkasamaRinShan(rinsyanList);
+                        }
+                    }
+                    else
+                    {
+                        // 牌山を生成する
+                        MakePaiyamaInit();
+
+                        // 牌を混ぜる
+                        ShufflePaiYama(0);
+                    }
+
+                    Debug.Log($"MakePaiYama : Mode = {GameModeManager.Instance.GetGameMode()} Support = {supportFlg}");
+                }
+                break;
+            case GameModeManager.GameMode.Puzzle:
+                {
+
+                }
+                break;
+            case GameModeManager.GameMode.Free:
+                {
+                    bool supportFlg = false;
+                    if (GameModeManager.Instance.GetStatusForFree().supportFlg) supportFlg = true;
+
+                    if (supportFlg)
+                    {
+                        SupportSetForTimeAttack supportSetForTimeAttack = new SupportSetForTimeAttack();
+                        supportSetForTimeAttack = LotterySupportSetForTimeAttack();
+                        List<PaiKinds> supportList = new List<PaiKinds>();
+                        supportList = GameModeManager.Instance.GetSupportList(supportSetForTimeAttack);
+
+                        // 牌山を生成する
+                        MakePaiyamaInit();
+
+                        // イカサマする。イカサマした牌の数が返り値
+                        int ikasamaCounter = IkasamaContentsForSupport(supportList);
+
+                        // イカサマした牌以外を混ぜる
+                        ShufflePaiYama(ikasamaCounter);
+
+                        // イカサマした場合、手牌を混ぜる
+                        if (ikasamaCounter > 0) ShufflePlayerTehai();
+
+                        // 混ぜた後に山を変えたければここ
+                        //IkasamaAfterVersion();
+
+                        if (supportSetForTimeAttack.yaku == SupportSetForTimeAttack.Yaku.SuKanTsu)
+                        {
+                            List<PaiKinds> rinsyanList = new List<PaiKinds>();
+                            rinsyanList.Add(supportList[0]);
+                            rinsyanList.Add(supportList[0]);
+                            rinsyanList.Add(supportList[0]);
+
+                            // 混ぜた後に嶺上牌を変えたければここ
+                            IkasamaRinShan(rinsyanList);
+                        }
+                    }
+                    else
+                    {
+                        // 牌山を生成する
+                        MakePaiyamaInit();
+
+                        // 牌を混ぜる
+                        ShufflePaiYama(0);
+                    }
+
+                    Debug.Log($"MakePaiYama : Mode = {GameModeManager.Instance.GetGameMode()} , Support = {supportFlg}");
+                }
+                break;
+            case GameModeManager.GameMode.Debug:
+                {
+                    // 牌山を生成する
+                    MakePaiyamaInit();
+
+                    // イカサマする。イカサマした牌の数が返り値
+                    int ikasamaCounter = IkasamaContents();
+
+                    // イカサマした牌以外を混ぜる
+                    ShufflePaiYama(ikasamaCounter);
+
+                    // イカサマした場合、手牌を混ぜる
+                    if (ikasamaCounter > 0) ShufflePlayerTehai();
+
+                    // 混ぜた後に山を変えたければここ
+                    IkasamaAfterVersion();
+
+                    // 混ぜた後に嶺上牌を変えたければここ
+                    IkasamaRinShan();
+                }
+                break;
+            default:
+                {
+                    Debug.LogError($"MakePaiYama : Error! , GameMode = {GameModeManager.Instance.GetGameMode()} , Change Mode Free");
+                    GameModeManager.Instance.SetGameModeFree(false);
+                }
+                return false;
+        }
+
+        // 牌山のログ
+        string paiyamaString = $"牌数 : {paiyama.Count}\n";
+        foreach(var item in paiyama)
+        {
+            paiyamaString += $"{item.thisKind}({item.totalNumber}),";
+        }
+        Debug.Log(paiyamaString);
+
+        return true;
+    }
+
+    /// <summary>
+    /// 並び変える前の牌山を作る
+    /// </summary>
+    private void MakePaiyamaInit()
+    {
         int numberIndex = 0;
-        for (int i = 0; i < System.Enum.GetValues(typeof(PaiKinds)).Length; i++) 
+        for (int i = 0; i < System.Enum.GetValues(typeof(PaiKinds)).Length; i++)
         {
             if (i % 10 != 0)
             {
@@ -477,21 +677,28 @@ public class MahjongManager : MonoBehaviour
                 }
             }
         }
-        
-        // イカサマする。イカサマした牌の数が返り値
-        int ikasamaCounter = IkasamaContents();
+    }
 
-        // イカサマした牌以外を混ぜる
-        for (int i = ikasamaCounter; i < paiyama.Count; i++)
+    /// <summary>
+    /// イカサマした牌以外を混ぜる
+    /// </summary>
+    /// <param name="_ikasamaCounter">イカサマした牌の数</param>
+    private void ShufflePaiYama(int _ikasamaCounter)
+    {
+        for (int i = _ikasamaCounter; i < paiyama.Count; i++)
         {
-            var j = Random.Range(ikasamaCounter, paiyama.Count - ikasamaCounter);
+            var j = Random.Range(_ikasamaCounter, paiyama.Count - _ikasamaCounter);
             var temp = paiyama[i];
             paiyama[i] = paiyama[j];
             paiyama[j] = temp;
         }
+    }
 
-        // イカサマした場合、手牌を混ぜる
-        if(ikasamaCounter > 0)
+    /// <summary>
+    /// プレイヤーの手牌を混ぜる
+    /// </summary>
+    private void ShufflePlayerTehai()
+    {
         {
             for (int i = 0; i < 13; i++)
             {
@@ -501,52 +708,91 @@ public class MahjongManager : MonoBehaviour
                 paiyama[j] = temp;
             }
         }
-
-        // 混ぜた後に山などを変えたければここ
-        IkasamaAfterVersion();
-
-
-        // 牌山のログ
-        string paiyamaString = $"牌数 : {paiyama.Count}\n";
-        foreach(var item in paiyama)
-        {
-            paiyamaString += $"{item.thisKind}({item.totalNumber}),";
-        }
-        Debug.Log(paiyamaString);
-
     }
 
     /// <summary>
     /// ゲームをはじめからスタートする
     /// </summary>
-    private void GameStart()
+    public void GameStart()
     {
-        nowKyoku = Kyoku.Ton1;
-        nowHonba = 0;
-
-        UiManagerChangeKyokuText();
-
-        MakePaiYama();
-
-        ResetKyoku();
+        clearCount = 0;
+        ResetKyoku(true);
     }
 
     /// <summary>
     /// 局単位の変数をリセットする
     /// </summary>
-    private void ResetKyoku()
+    /// <param name="_firstFlg">初回(東1局0本場)ならTrue</param>
+    private void ResetKyoku(bool _firstFlg)
     {
+        if (_firstFlg)
+        {
+            nowKyoku = Kyoku.Ton1;
+            nowHonba = 0;
+        }
+        else
+        {
+            nowHonba++;
+        }
+
         nowPaiIndex = 0;
         nowGameTurn = GameTurn.Ready;
         nowTsumoCount = 0;
         wanpai.ResetWanpai();
 
-        nakiWaitFlg = false;
+        ResetReceptionNakiCheck();
+
+        playerNakiWaitFlg = false;
+        alreadyNakiFlg = true;
         turnActionFlg = TurnActionKind.None;
 
         gameTimer = 0;
 
-        UiManagerChangeNokoriText();
+        ResetTransformObjects();
+        ResetPlayersTehaisAndKawas();
+        uiManager.ResetUi();
+
+        if (MakePaiYama())
+        {
+            UiManagerChangeNokoriText();
+            UiManagerChangeKyokuText();
+
+            DealHaiPai();
+            wanpai.MakeDoraHyouji();
+
+            StartCoroutine(ResetKyokuCoroutine());
+        }
+        else
+        {
+            Start();
+        }
+    }
+
+    /// <summary>
+    /// 各プレイヤーからの鳴きの応答をリセットする
+    /// </summary>
+    private void ResetReceptionNakiCheck()
+    {
+        for (int i = 0; i < playerTehais.Length; i++) receptionNakiCheck[i] = NakiKinds.None;
+    }
+
+    /// <summary>
+    /// 局を開始するときに実行するコルーチン
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator ResetKyokuCoroutine()
+    {
+        foreach (var item in playerTehais)
+        {
+            item.MakeAllTehaiObjects();
+        }
+        yield return new WaitForSeconds(1f);
+        foreach (var item in playerTehais)
+        {
+            item.RiiPai();
+        }
+        yield return new WaitForSeconds(1f);
+        NextGameTurn();
     }
 
     /// <summary>
@@ -555,256 +801,650 @@ public class MahjongManager : MonoBehaviour
     /// <returns></returns>
     private int IkasamaContents()
     {
-        int counter = 0;
-        int num = 13; //この値を変更して好みのイカサマを実施
-        switch (num)
+        int counter = 0; // この値は変えてはいけない
+
+        switch (GameModeManager.Instance.GetGameMode())
         {
-            case 0: //大四喜
+            case GameModeManager.GameMode.TimeAttack:
                 {
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J4);
-                    counter = IkasamaTehai(counter, PaiKinds.J4);
-                    counter = IkasamaTehai(counter, PaiKinds.J4);
+
                 }
                 break;
-            case 1: //チーのテスト1
+            case GameModeManager.GameMode.Puzzle:
                 {
-                    counter = IkasamaTehai(counter, PaiKinds.M2);
-                    counter = IkasamaTehai(counter, PaiKinds.M3);
-                    counter = IkasamaTehai(counter, PaiKinds.M4);
-                    counter = IkasamaTehai(counter, PaiKinds.M5);
-                    counter = IkasamaTehai(counter, PaiKinds.M6);
-                    counter = IkasamaTehai(counter, PaiKinds.M7);
-                    counter = IkasamaTehai(counter, PaiKinds.M8);
-                    counter = IkasamaTehai(counter, PaiKinds.P5);
-                    counter = IkasamaTehai(counter, PaiKinds.P5);
-                    counter = IkasamaTehai(counter, PaiKinds.S4);
-                    counter = IkasamaTehai(counter, PaiKinds.S5);
-                    counter = IkasamaTehai(counter, PaiKinds.S5);
-                    counter = IkasamaTehai(counter, PaiKinds.S6);
+
                 }
                 break;
-            case 2: //チーのテスト2
+            case GameModeManager.GameMode.Free:
                 {
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J4);
-                    counter = IkasamaTehai(counter, PaiKinds.J5);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
-                    counter = IkasamaTehai(counter, PaiKinds.J7);
-                    counter = IkasamaTehai(counter, PaiKinds.M1);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.P1);
-                    counter = IkasamaTehai(counter, PaiKinds.P9);
+
                 }
                 break;
-            case 3: //字一色七対子
+            case GameModeManager.GameMode.Debug:
                 {
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J4);
-                    counter = IkasamaTehai(counter, PaiKinds.J5);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
-                    counter = IkasamaTehai(counter, PaiKinds.J7);
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J4);
-                    counter = IkasamaTehai(counter, PaiKinds.J5);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
+                    // //この値を変更して好みのイカサマを実施
+                    int num = GameModeManager.Instance.GetStatusForDebug().haipai;
+
+                    switch (num)
+                    {
+                        case 0: //大四喜
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                            }
+                            break;
+                        case 1: //チーのテスト1
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M2);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.M4);
+                                counter = IkasamaTehai(counter, PaiKinds.M5);
+                                counter = IkasamaTehai(counter, PaiKinds.M6);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.S4);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                            }
+                            break;
+                        case 2: //チーのテスト2
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                            }
+                            break;
+                        case 3: //字一色七対子
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                            }
+                            break;
+                        case 4: //複雑な形の聴牌
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.S2);
+                                counter = IkasamaTehai(counter, PaiKinds.S3);
+                                counter = IkasamaTehai(counter, PaiKinds.S4);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                                counter = IkasamaTehai(counter, PaiKinds.S7);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                            }
+                            break;
+                        case 5: //九連宝灯
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M2);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.M4);
+                                counter = IkasamaTehai(counter, PaiKinds.M5);
+                                counter = IkasamaTehai(counter, PaiKinds.M6);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+
+                                //counter = IkasamaTehai(counter, PaiKinds.S1);
+                                //counter = IkasamaTehai(counter, PaiKinds.S1);
+                                //counter = IkasamaTehai(counter, PaiKinds.S2);
+                                //counter = IkasamaTehai(counter, PaiKinds.S2);
+                                //counter = IkasamaTehai(counter, PaiKinds.S3);
+                                //counter = IkasamaTehai(counter, PaiKinds.S4);
+                                //counter = IkasamaTehai(counter, PaiKinds.S5);
+                                //counter = IkasamaTehai(counter, PaiKinds.S6);
+                                //counter = IkasamaTehai(counter, PaiKinds.S7);
+                                //counter = IkasamaTehai(counter, PaiKinds.S8);
+                                //counter = IkasamaTehai(counter, PaiKinds.S9);
+                                //counter = IkasamaTehai(counter, PaiKinds.S9);
+                                //counter = IkasamaTehai(counter, PaiKinds.S9);
+                            }
+                            break;
+                        case 6: //8面待ち
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P7);
+                                counter = IkasamaTehai(counter, PaiKinds.P8);
+                                counter = IkasamaTehai(counter, PaiKinds.P8);
+                                counter = IkasamaTehai(counter, PaiKinds.P8);
+                            }
+                            break;
+                        case 7: //国士十三面待ち
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+                            }
+                            break;
+                        case 8: //二盃口
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M2);
+                                counter = IkasamaTehai(counter, PaiKinds.M2);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P2);
+                                counter = IkasamaTehai(counter, PaiKinds.P2);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                            }
+                            break;
+                        case 9: //鳴いて速そうな好配牌
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.P2);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+                            }
+                            break;
+                        case 10: //面前でマッハな好配牌
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P2);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                            }
+                            break;
+                        case 11: //リーチ時の暗槓のテストに使う
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P2);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                            }
+                            break;
+                        case 12: //門前の高目緑一色の両面待ち
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.S2);
+                                counter = IkasamaTehai(counter, PaiKinds.S3);
+                                counter = IkasamaTehai(counter, PaiKinds.S3);
+                                counter = IkasamaTehai(counter, PaiKinds.S4);
+                                counter = IkasamaTehai(counter, PaiKinds.S4);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                                counter = IkasamaTehai(counter, PaiKinds.S8);
+                                counter = IkasamaTehai(counter, PaiKinds.S8);
+                                counter = IkasamaTehai(counter, PaiKinds.S8);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                            }
+                            break;
+                        case 13: //門前の字一色のシャボ待ち
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                            }
+                            break;
+                        case 14: //門前の清老頭のシャボ待ち
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                            }
+                            break;
+                        case 15: //門前の大三元の両面待ち
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M2);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+                            }
+                            break;
+                        case 16: //百万石
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M2);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                            }
+                            break;
+                        case 17: //大車輪
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.P2);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P7);
+                                counter = IkasamaTehai(counter, PaiKinds.P7);
+                                counter = IkasamaTehai(counter, PaiKinds.P8);
+                                counter = IkasamaTehai(counter, PaiKinds.P8);
+                            }
+                            break;
+                        case 18: //紅孔雀
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S7);
+                                counter = IkasamaTehai(counter, PaiKinds.S7);
+                                counter = IkasamaTehai(counter, PaiKinds.S7);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+                            }
+                            break;
+                        case 19: //四連刻
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.P2);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P4);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P5);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                                counter = IkasamaTehai(counter, PaiKinds.P6);
+                            }
+                            break;
+                        case 20: //四槓子
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M6);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                            }
+                            break;
+                        case 21: //九種九牌と四風子連打
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S2);
+                                counter = IkasamaTehai(counter, PaiKinds.S3);
+                                counter = IkasamaTehai(counter, PaiKinds.S4);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                                counter = IkasamaTehai(counter, PaiKinds.S7);
+                                counter = IkasamaTehai(counter, PaiKinds.S8);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S2);
+                                counter = IkasamaTehai(counter, PaiKinds.S3);
+                                counter = IkasamaTehai(counter, PaiKinds.S4);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                                counter = IkasamaTehai(counter, PaiKinds.S7);
+                                counter = IkasamaTehai(counter, PaiKinds.S8);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S2);
+                                counter = IkasamaTehai(counter, PaiKinds.S3);
+                                counter = IkasamaTehai(counter, PaiKinds.S4);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                                counter = IkasamaTehai(counter, PaiKinds.S7);
+                                counter = IkasamaTehai(counter, PaiKinds.S8);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                                counter = IkasamaTehai(counter, PaiKinds.P3);
+                            }
+                            break;
+                        case 22: //下家にあがられる
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M2);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.M4);
+                                counter = IkasamaTehai(counter, PaiKinds.M5);
+                                counter = IkasamaTehai(counter, PaiKinds.M6);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+                                counter = IkasamaTehai(counter, PaiKinds.M8);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S2);
+                                counter = IkasamaTehai(counter, PaiKinds.S3);
+                                counter = IkasamaTehai(counter, PaiKinds.S4);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                                counter = IkasamaTehai(counter, PaiKinds.S7);
+                                counter = IkasamaTehai(counter, PaiKinds.S8);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S2);
+                                counter = IkasamaTehai(counter, PaiKinds.S3);
+                                counter = IkasamaTehai(counter, PaiKinds.S4);
+                                counter = IkasamaTehai(counter, PaiKinds.S5);
+                                counter = IkasamaTehai(counter, PaiKinds.S6);
+                                counter = IkasamaTehai(counter, PaiKinds.S7);
+                                counter = IkasamaTehai(counter, PaiKinds.S8);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.P7);
+                                counter = IkasamaTehai(counter, PaiKinds.M5);
+                                counter = IkasamaTehai(counter, PaiKinds.M2);
+                                counter = IkasamaTehai(counter, PaiKinds.M2);
+                            }
+                            break;
+                        case 23: //下家からトリロン
+                            {
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.M3);
+                                counter = IkasamaTehai(counter, PaiKinds.M4);
+                                counter = IkasamaTehai(counter, PaiKinds.M4);
+                                counter = IkasamaTehai(counter, PaiKinds.M4);
+                                counter = IkasamaTehai(counter, PaiKinds.M5);
+                                counter = IkasamaTehai(counter, PaiKinds.M5);
+                                counter = IkasamaTehai(counter, PaiKinds.M5);
+                                counter = IkasamaTehai(counter, PaiKinds.M6);
+                                counter = IkasamaTehai(counter, PaiKinds.M6);
+                                counter = IkasamaTehai(counter, PaiKinds.M6);
+                                counter = IkasamaTehai(counter, PaiKinds.M7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.M1);
+                                counter = IkasamaTehai(counter, PaiKinds.M9);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P9);
+                                counter = IkasamaTehai(counter, PaiKinds.S1);
+                                counter = IkasamaTehai(counter, PaiKinds.S9);
+                                counter = IkasamaTehai(counter, PaiKinds.J1);
+                                counter = IkasamaTehai(counter, PaiKinds.J2);
+                                counter = IkasamaTehai(counter, PaiKinds.J3);
+                                counter = IkasamaTehai(counter, PaiKinds.J4);
+                                counter = IkasamaTehai(counter, PaiKinds.J5);
+                                counter = IkasamaTehai(counter, PaiKinds.J6);
+                                counter = IkasamaTehai(counter, PaiKinds.J7);
+
+                                counter = IkasamaTehai(counter, PaiKinds.P7);
+                                counter = IkasamaTehai(counter, PaiKinds.P1);
+                                counter = IkasamaTehai(counter, PaiKinds.P2);
+                                counter = IkasamaTehai(counter, PaiKinds.P2);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                 }
-                break;
-            case 4: //複雑な形の聴牌
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.P4);
-                    counter = IkasamaTehai(counter, PaiKinds.P4);
-                    counter = IkasamaTehai(counter, PaiKinds.P4);
-                    counter = IkasamaTehai(counter, PaiKinds.S2);
-                    counter = IkasamaTehai(counter, PaiKinds.S3);
-                    counter = IkasamaTehai(counter, PaiKinds.S4);
-                    counter = IkasamaTehai(counter, PaiKinds.S5);
-                    counter = IkasamaTehai(counter, PaiKinds.S5);
-                    counter = IkasamaTehai(counter, PaiKinds.S5);
-                    counter = IkasamaTehai(counter, PaiKinds.S6);
-                    counter = IkasamaTehai(counter, PaiKinds.S7);
-                    counter = IkasamaTehai(counter, PaiKinds.M8);
-                    counter = IkasamaTehai(counter, PaiKinds.M8);
-                }
-                break;
-            case 5: //九連宝灯
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.M1);
-                    counter = IkasamaTehai(counter, PaiKinds.M1);
-                    counter = IkasamaTehai(counter, PaiKinds.M1);
-                    counter = IkasamaTehai(counter, PaiKinds.M2);
-                    counter = IkasamaTehai(counter, PaiKinds.M3);
-                    counter = IkasamaTehai(counter, PaiKinds.M4);
-                    counter = IkasamaTehai(counter, PaiKinds.M5);
-                    counter = IkasamaTehai(counter, PaiKinds.M6);
-                    counter = IkasamaTehai(counter, PaiKinds.M7);
-                    counter = IkasamaTehai(counter, PaiKinds.M8);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                }
-                break;
-            case 6: //8面待ち
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.P1);
-                    counter = IkasamaTehai(counter, PaiKinds.P1);
-                    counter = IkasamaTehai(counter, PaiKinds.P1);
-                    counter = IkasamaTehai(counter, PaiKinds.P3);
-                    counter = IkasamaTehai(counter, PaiKinds.P3);
-                    counter = IkasamaTehai(counter, PaiKinds.P3);
-                    counter = IkasamaTehai(counter, PaiKinds.P4);
-                    counter = IkasamaTehai(counter, PaiKinds.P5);
-                    counter = IkasamaTehai(counter, PaiKinds.P6);
-                    counter = IkasamaTehai(counter, PaiKinds.P7);
-                    counter = IkasamaTehai(counter, PaiKinds.P8);
-                    counter = IkasamaTehai(counter, PaiKinds.P8);
-                    counter = IkasamaTehai(counter, PaiKinds.P8);
-                }
-                break;
-            case 7: //国士十三面待ち
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.M1);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.P1);
-                    counter = IkasamaTehai(counter, PaiKinds.P9);
-                    counter = IkasamaTehai(counter, PaiKinds.S1);
-                    counter = IkasamaTehai(counter, PaiKinds.S9);
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J4);
-                    counter = IkasamaTehai(counter, PaiKinds.J5);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
-                    counter = IkasamaTehai(counter, PaiKinds.J7);
-                }
-                break;
-            case 8: //二盃口
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.M1);
-                    counter = IkasamaTehai(counter, PaiKinds.M1);
-                    counter = IkasamaTehai(counter, PaiKinds.M2);
-                    counter = IkasamaTehai(counter, PaiKinds.M2);
-                    counter = IkasamaTehai(counter, PaiKinds.M3);
-                    counter = IkasamaTehai(counter, PaiKinds.M3);
-                    counter = IkasamaTehai(counter, PaiKinds.P1);
-                    counter = IkasamaTehai(counter, PaiKinds.P2);
-                    counter = IkasamaTehai(counter, PaiKinds.P2);
-                    counter = IkasamaTehai(counter, PaiKinds.P3);
-                    counter = IkasamaTehai(counter, PaiKinds.P3);
-                    counter = IkasamaTehai(counter, PaiKinds.S9);
-                    counter = IkasamaTehai(counter, PaiKinds.S9);
-                }
-                break;
-            case 9: //鳴いて速そうな好配牌
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.M1);
-                    counter = IkasamaTehai(counter, PaiKinds.M7);
-                    counter = IkasamaTehai(counter, PaiKinds.M8);
-                    counter = IkasamaTehai(counter, PaiKinds.P2);
-                    counter = IkasamaTehai(counter, PaiKinds.P3);
-                    counter = IkasamaTehai(counter, PaiKinds.P4);
-                    counter = IkasamaTehai(counter, PaiKinds.P5);
-                    counter = IkasamaTehai(counter, PaiKinds.P6);
-                    counter = IkasamaTehai(counter, PaiKinds.P9);
-                    counter = IkasamaTehai(counter, PaiKinds.P9);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
-                    counter = IkasamaTehai(counter, PaiKinds.J7);
-                }
-                break;
-            case 10: //面前でマッハな好配牌
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.M7);
-                    counter = IkasamaTehai(counter, PaiKinds.M8);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.P2);
-                    counter = IkasamaTehai(counter, PaiKinds.P3);
-                    counter = IkasamaTehai(counter, PaiKinds.P4);
-                    counter = IkasamaTehai(counter, PaiKinds.P5);
-                    counter = IkasamaTehai(counter, PaiKinds.P6);
-                    counter = IkasamaTehai(counter, PaiKinds.P6);
-                    counter = IkasamaTehai(counter, PaiKinds.P6);
-                }
-                break;
-            case 11: //リーチ時の暗槓のテストに使う
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.M7);
-                    counter = IkasamaTehai(counter, PaiKinds.M7);
-                    counter = IkasamaTehai(counter, PaiKinds.M7);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.M9);
-                    counter = IkasamaTehai(counter, PaiKinds.P2);
-                    counter = IkasamaTehai(counter, PaiKinds.P3);
-                    counter = IkasamaTehai(counter, PaiKinds.P4);
-                    counter = IkasamaTehai(counter, PaiKinds.P5);
-                    counter = IkasamaTehai(counter, PaiKinds.P6);
-                    counter = IkasamaTehai(counter, PaiKinds.P6);
-                    counter = IkasamaTehai(counter, PaiKinds.P6);
-                }
-                break;
-            case 12: //門前の高目緑一色の両面待ち
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.S2);
-                    counter = IkasamaTehai(counter, PaiKinds.S3);
-                    counter = IkasamaTehai(counter, PaiKinds.S3);
-                    counter = IkasamaTehai(counter, PaiKinds.S4);
-                    counter = IkasamaTehai(counter, PaiKinds.S4);
-                    counter = IkasamaTehai(counter, PaiKinds.S6);
-                    counter = IkasamaTehai(counter, PaiKinds.S6);
-                    counter = IkasamaTehai(counter, PaiKinds.S6);
-                    counter = IkasamaTehai(counter, PaiKinds.S8);
-                    counter = IkasamaTehai(counter, PaiKinds.S8);
-                    counter = IkasamaTehai(counter, PaiKinds.S8);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
-                }
-                break;
-            case 13: //門前の字一色のシャボ待ち
-                {
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J1);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J2);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J3);
-                    counter = IkasamaTehai(counter, PaiKinds.J5);
-                    counter = IkasamaTehai(counter, PaiKinds.J5);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
-                    counter = IkasamaTehai(counter, PaiKinds.J6);
-                }
-                break;
-            default:
                 break;
         }
+
         return counter;
     }
 
     /// <summary>
-    /// 混ぜた後に山などをイカサマで変えたければここ
+    /// 配牌サポート機能アリの時にイカサマするならここ
+    /// </summary>
+    /// <param name="_paiKindList"></param>
+    /// <returns></returns>
+    private int IkasamaContentsForSupport(List<PaiKinds> _paiKindList)
+    {
+        int counter = 0; // この値は変えてはいけない
+
+        foreach(var item in _paiKindList)
+        {
+            counter = IkasamaTehai(counter, item);
+        }
+
+        return counter;
+    }
+
+    /// <summary>
+    /// 混ぜた後に山をイカサマで変えたければここ
     /// </summary>
     private void IkasamaAfterVersion()
     {
-        int num = -1;
+        int num = -1; //この値を変更して好みのイカサマを実施
+
+        switch (GameModeManager.Instance.GetGameMode())
+        {
+            case GameModeManager.GameMode.TimeAttack:
+                {
+                    //num = GameModeManager.Instance.GetStatusForDebug().yama;
+                }
+                break;
+            case GameModeManager.GameMode.Puzzle:
+                {
+                    //num = GameModeManager.Instance.GetStatusForDebug().yama;
+                }
+                break;
+            case GameModeManager.GameMode.Free:
+                {
+                    //num = GameModeManager.Instance.GetStatusForDebug().yama;
+                }
+                break;
+            case GameModeManager.GameMode.Debug:
+                {
+                    num = GameModeManager.Instance.GetStatusForDebug().yama;
+                }
+                break;
+        }
+
         switch (num)
         {
             case 0: // イカサマNo.11[リーチ時の暗槓のテストに使う] のとき
@@ -824,8 +1464,113 @@ public class MahjongManager : MonoBehaviour
                     IkasamaTehai(60, PaiKinds.S2);
                 }
                 break;
+            case 2:
+                {
+                }
+                break;
             default:
                 break;
+        }
+    }
+
+    /// <summary>
+    /// 嶺上牌をイカサマする
+    /// </summary>
+    /// <param name="paiKind1"></param>
+    /// <param name="paiKind2"></param>
+    /// <param name="paiKind3"></param>
+    /// <param name="paiKind4"></param>
+    private void IkasamaRinShan()
+    {
+        PaiKinds paiKind1 = PaiKinds.None_00;
+        PaiKinds paiKind2 = PaiKinds.None_00;
+        PaiKinds paiKind3 = PaiKinds.None_00;
+        PaiKinds paiKind4 = PaiKinds.None_00;
+
+        int num = -1; //この値を変更して好みのイカサマを実施
+
+        switch (GameModeManager.Instance.GetGameMode())
+        {
+            case GameModeManager.GameMode.TimeAttack:
+                {
+                    //num = GameModeManager.Instance.GetStatusForDebug().rinshan;
+                }
+                break;
+            case GameModeManager.GameMode.Puzzle:
+                {
+                    //num = GameModeManager.Instance.GetStatusForDebug().rinshan;
+                }
+                break;
+            case GameModeManager.GameMode.Free:
+                {
+                    //num = GameModeManager.Instance.GetStatusForDebug().rinshan;
+                }
+                break;
+            case GameModeManager.GameMode.Debug:
+                {
+                    num = GameModeManager.Instance.GetStatusForDebug().rinshan;
+                }
+                break;
+        }
+
+        switch (num)
+        {
+            case 0: // イカサマNo.20[四槓子] のとき
+                {
+                    paiKind1 = PaiKinds.M6;
+                    paiKind2 = PaiKinds.M6;
+                    paiKind3 = PaiKinds.M6;
+                    paiKind4 = PaiKinds.M1;
+                }
+                break;
+            default:
+                break;
+        }
+
+        List<PaiKinds> paiKindList = new List<PaiKinds>();
+        if ((int)paiKind1 % 10 != 0)
+        {
+            paiKindList.Add(paiKind1);
+        }
+        if ((int)paiKind2 % 10 != 0)
+        {
+            paiKindList.Add(paiKind2);
+        }
+        if ((int)paiKind3 % 10 != 0)
+        {
+            paiKindList.Add(paiKind3);
+        }
+        if ((int)paiKind4 % 10 != 0)
+        {
+            paiKindList.Add(paiKind4);
+        }
+        IkasamaRinShan(paiKindList);
+    }
+
+    /// <summary>
+    /// 嶺上牌をイカサマする
+    /// </summary>
+    /// <param name="_paiKindList"></param>
+    private void IkasamaRinShan(List<PaiKinds> _paiKindList)
+    {
+        //Debug.Log($"IkasamaRinShan : _paiKindList.Count = {_paiKindList.Count}");
+        for (int j = 0; j < _paiKindList.Count; j++)
+        {
+            //Debug.Log($"IkasamaRinShan : _paiKindList[j] = {_paiKindList[j]}");
+            if (paiyama[paiyama.Count - 1 - j].thisKind != _paiKindList[j])
+            {
+                for (int i = paiyama.Count - 1 - j; i >= 0; i--)
+                {
+                    if (paiyama[i].thisKind == _paiKindList[j])
+                    {
+                        var temp = paiyama[i];
+                        paiyama[i] = paiyama[paiyama.Count - 1 - j];
+                        paiyama[paiyama.Count - 1 - j] = temp;
+                        //Debug.Log($"IkasamaRinShan : Change [{i}] <-> [{paiyama.Count - 1 - j}]");
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -869,7 +1614,7 @@ public class MahjongManager : MonoBehaviour
                         paiyama[i] = paiyama[_tehaiIndex];
                         paiyama[_tehaiIndex] = temp;
                         findFlg = true;
-                        Debug.Log($"IkasamaTehai : Find Difficult , _paiKind = {_paiKind} , target counter = {target}");
+                        //Debug.Log($"IkasamaTehai : Find Difficult , _paiKind = {_paiKind} , target counter = {target}");
                         break;
                     }
                 }
@@ -886,18 +1631,45 @@ public class MahjongManager : MonoBehaviour
     private void NextGameTurn()
     {
         bool suteFlg = false;
-        if (nowGameTurn == GameTurn.Ton_Sute) suteFlg = true;
-        else if (nowGameTurn == GameTurn.Nan_Sute) suteFlg = true;
-        else if (nowGameTurn == GameTurn.Sha_Sute) suteFlg = true;
-        else if (nowGameTurn == GameTurn.Pe_Sute) suteFlg = true;
+        if (nowGameTurn == GameTurn.Player_Sute) suteFlg = true;
+        else if (nowGameTurn == GameTurn.Shimocha_Sute) suteFlg = true;
+        else if (nowGameTurn == GameTurn.Toimen_Sute) suteFlg = true;
+        else if (nowGameTurn == GameTurn.Kamicha_Sute) suteFlg = true;
 
-        if (nowTsumoCount >= COUNT_FINISH_TSUMO && suteFlg)
+        if (nowTsumoCount == 4 && alreadyNakiFlg && suteFlg) // 四風連打
+        {
+            //Debug.Log($"NextGameTurn : Check SuuFuuRenda");
+            if (playerKawas[0].GetKawaLength() == 1 &&
+                playerKawas[1].GetKawaLength() == 1 &&
+                playerKawas[2].GetKawaLength() == 1 &&
+                playerKawas[3].GetKawaLength() == 1)
+            {
+                var paiKind = playerKawas[0].GetLastSutePai().myPaiStatus.thisKind;
+                if (paiKind >= PaiKinds.J1 && paiKind <= PaiKinds.J4)
+                {
+                    if (paiKind == playerKawas[1].GetLastSutePai().myPaiStatus.thisKind &&
+                        paiKind == playerKawas[2].GetLastSutePai().myPaiStatus.thisKind &&
+                        paiKind == playerKawas[3].GetLastSutePai().myPaiStatus.thisKind)
+                    {
+                        KyokuFinishOfRyuukyoku(RyuukyokuOfTochuu.SuuFuuRenda);
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (nowTsumoCount >= COUNT_FINISH_TSUMO && suteFlg) // 流局
         {
             KyokuFinishOfRyuukyoku(RyuukyokuOfTochuu.None);
         }
-        else if (nowGameTurn == GameTurn.Pe_Sute)
+        else if (nowGameTurn == GameTurn.Kamicha_Sute)
         {
-            nowGameTurn = GameTurn.Ton_Tsumo;
+            nowGameTurn = GameTurn.Player_Tsumo;
+        }
+        else if (nowGameTurn == GameTurn.Ready)
+        {
+            // ここを変えると親が変わる
+            nowGameTurn = GameTurn.Player_Tsumo;
         }
         else
         {
@@ -906,15 +1678,31 @@ public class MahjongManager : MonoBehaviour
 
         //Debug.Log($"NextGameTurn : nowGameTurn = {nowGameTurn}");
 
-        ActionTurn(false, false, PlayerKind.Other);
+        PlayerActionTurn(false, false, PlayerKind.Other);
+
+        PlayerKind sutePlayer = PlayerKind.Other;
+        if (nowGameTurn == GameTurn.Player_Sute) sutePlayer = PlayerKind.Player;
+        else if (nowGameTurn == GameTurn.Shimocha_Sute) sutePlayer = PlayerKind.Shimocha;
+        else if (nowGameTurn == GameTurn.Toimen_Sute) sutePlayer = PlayerKind.Toimen;
+        else if (nowGameTurn == GameTurn.Kamicha_Sute) sutePlayer = PlayerKind.Kamicha;
+         
+        if (sutePlayer!= PlayerKind.Other)
+        {
+            var sutePai = playerKawas[(int)(sutePlayer - 1)].GetLastSutePai().myPaiStatus.thisKind;
+            for(int i = 1; i <= 3; i++)
+            {
+                receptionNakiCheck[i] = playerTehais[i].NakiThink(sutePai, sutePlayer);
+            }
+            //Debug.Log($"NextGameTurn : Naki Check\nShimocha = {receptionNakiCheck[1]} , Toimen = {receptionNakiCheck[2]} , Kamicha = {receptionNakiCheck[3]}");
+        }
     }
 
     /// <summary>
-    /// ターンに応じてアクションを実行する
+    /// プレイヤーがターンに応じてアクションを実行する
     /// </summary>
     /// <param name="_nakiFlg">鳴きから回ってきたときはTrue</param>
     /// <param name="_kanFlg">カンから回ってきたときはTrue</param>
-    private void ActionTurn(bool _nakiFlg , bool _kanFlg , PlayerKind _kanPlayerKind) 
+    private void PlayerActionTurn(bool _nakiFlg , bool _kanFlg , PlayerKind _kanPlayerKind) 
     {
         if (GetNowTurnTsumo())
         {
@@ -933,19 +1721,15 @@ public class MahjongManager : MonoBehaviour
 
             UiManagerChangeNokoriText();
 
-            if (nowGameTurn == GameTurn.Ton_Tsumo)
+            if (nowGameTurn == GameTurn.Player_Tsumo)
             {
-                if (_nakiFlg) //鳴きで回ってきたとき
-                {
-                    //なし
-                }
-                else
+                if (!_nakiFlg || _kanFlg) //鳴きで回ってきてないときorカンのあと
                 {
                     bool flgTsumoAgari = playerTehais[0].GetAbleTsumoAgari();
 
                     if (playerTehais[0].GetReachTurn() == INDEX_NONE) // 立直していないとき
                     {
-                        bool flgRyuukyoku = playerTehais[0].GetAbleRyuukyoku();
+                        bool flgRyuukyoku = alreadyNakiFlg ? playerTehais[0].GetAbleRyuukyoku() : false;
                         bool flgAnkan = playerTehais[0].GetAbleAnkan(false);
                         bool flgKakan = playerTehais[0].GetAbleKakan();
 
@@ -1018,7 +1802,7 @@ public class MahjongManager : MonoBehaviour
                 }
             }
         }
-        else if (GetNowTurnSute() && nowGameTurn != GameTurn.Ton_Sute)
+        else if (GetNowTurnSute() && nowGameTurn != GameTurn.Player_Sute)
         {
             int playerIndex = (int)nowGameTurn / 2;
 
@@ -1027,6 +1811,12 @@ public class MahjongManager : MonoBehaviour
             bool flgRon;
             bool flgFuriten;
 
+            bool nakiAbleFlg = false;
+            bool ronYakumanFlg = false;
+
+            flgRon = playerTehais[0].GetAbleRon(sutePai);
+            flgFuriten = flgRon ? playerKawas[0].CheckFuriten(playerTehais[0].GetTehaiInformation(), (PlayerKind)playerIndex) : false;
+
             if (playerTehais[0].GetReachTurn() == INDEX_NONE) // 立直していないとき
             {
                 bool flgChiL = playerTehais[0].GetAbleChiLow(sutePai, (PlayerKind)playerIndex);
@@ -1034,27 +1824,32 @@ public class MahjongManager : MonoBehaviour
                 bool flgChiH = playerTehais[0].GetAbleChiHigh(sutePai, (PlayerKind)playerIndex);
                 bool flgPon = playerTehais[0].GetAblePon(sutePai);
                 bool flgKan = playerTehais[0].GetAbleDaiminkan(sutePai);
-                flgRon = playerTehais[0].GetAbleRon(sutePai);
-                flgFuriten = flgRon ? playerKawas[0].CheckFuriten(playerTehais[0].GetTehaiInformation(), (PlayerKind)playerIndex) : false;
 
                 if (flgChiL || flgChiM || flgChiH || flgPon || flgKan || flgRon)
                 {
                     uiManager.DisplayNaki(flgChiL, flgChiM, flgChiH, flgPon, flgKan, flgRon, flgFuriten, sutePai);
+                    nakiAbleFlg = true; 
+                }
+                else
+                {
+                    ChangePlayerReceptionNaki(NakiKinds.Through);
                 }
             }
             else // 立直しているとき
             {
-                flgRon = playerTehais[0].GetAbleRon(sutePai);
-                flgFuriten = playerTehais[0].GetMinogashiAfterReachFlg();
-
                 if (!flgFuriten)
                 {
-                    flgFuriten = flgRon ? playerKawas[0].CheckFuriten(playerTehais[0].GetTehaiInformation(), (PlayerKind)playerIndex) : false;
+                    flgFuriten = playerTehais[0].GetMinogashiAfterReachFlg();
                 }
 
                 if (flgRon)
                 {
                     uiManager.DisplayNaki(false, false, false, false, false, flgRon, flgFuriten, sutePai);
+                    nakiAbleFlg = true;
+                }
+                else
+                {
+                    ChangePlayerReceptionNaki(NakiKinds.Through);
                 }
             }
 
@@ -1065,10 +1860,154 @@ public class MahjongManager : MonoBehaviour
                 YakumanOfLocalKind local = CheckLocalYakuman(playerTehais[0].GetTehais(), playerTehais[0].GetNakis(), sutePai);
                 if (yakuman != YakumanKind.None || local != YakumanOfLocalKind.None)
                 {
-                    //Debug.Log($"ActionTurn : Yakuman Ron");
-                    playerKawas[playerIndex - 1].SetRonPaiAura(true);
+                    ronYakumanFlg = true;
                 }
             }
+
+            if (ronYakumanFlg)
+            {
+                playerKawas[playerIndex - 1].SetRonPaiAura(true);
+            }
+            else if (nakiAbleFlg)
+            {
+                playerKawas[playerIndex - 1].SetNakiPaiObjects(true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 複数人の鳴き希望を調べる
+    /// </summary>
+    private void CheckNakiDoing()
+    {
+        int throughCount = 0;
+        List<int> nakiHopePlayerList = new List<int>();
+        for (int i = 0; i < playerTehais.Length; i++)
+        {
+            if (receptionNakiCheck[i] == NakiKinds.None)
+            {
+                Debug.LogWarning($"CheckNakiDoing : {(PlayerKind)(i + 1)} is None");
+                return;
+            }
+            else if (receptionNakiCheck[i] == NakiKinds.Through)
+            {
+                throughCount++;
+            }
+            else
+            {
+                nakiHopePlayerList.Add(i);
+            }
+        }
+
+        if (throughCount == playerTehais.Length) // 全員スルー
+        {
+            ResetReceptionNakiCheck();
+            NextGameTurn();
+            //Debug.Log($"CheckNakiDoing : Through");
+            return;
+        }
+        else if (nakiHopePlayerList.Count == 1) // 鳴きたい人がひとり
+        {
+            int playerIndex = nakiHopePlayerList[0];
+            ExecuteNaki(playerIndex, receptionNakiCheck[playerIndex]);
+            Debug.Log($"CheckNakiDoing : Naki = {(PlayerKind)(playerIndex + 1)} , {receptionNakiCheck[playerIndex]}");
+            ResetReceptionNakiCheck();
+            return;
+        }
+        else // 鳴きたい人が複数
+        {
+            string logStr = $"CheckNakiDoing : {nakiHopePlayerList.Count} Player Want to Naki\n";
+            foreach(var playerIndex in nakiHopePlayerList)
+            {
+                logStr += $"[{(PlayerKind)(playerIndex + 1)} , {receptionNakiCheck[playerIndex]}] , ";
+            }
+
+            foreach (var playerIndex in nakiHopePlayerList)
+            {
+                // ToDo ダブロンや頭ハネを未実装!!!
+                if(receptionNakiCheck[playerIndex] == NakiKinds.Ron)
+                {
+                    logStr += $"\nFinaly -> {(PlayerKind)(playerIndex + 1)} , {receptionNakiCheck[playerIndex]}";
+                    ExecuteNaki(playerIndex, receptionNakiCheck[playerIndex]);
+                    ResetReceptionNakiCheck();
+                    break;
+                }
+            }
+            foreach (var playerIndex in nakiHopePlayerList)
+            {
+                if (receptionNakiCheck[playerIndex] == NakiKinds.MinKan || receptionNakiCheck[playerIndex] == NakiKinds.Pon)
+                {
+                    logStr += $"\nFinaly -> {(PlayerKind)(playerIndex + 1)} , {receptionNakiCheck[playerIndex]}";
+                    ExecuteNaki(playerIndex, receptionNakiCheck[playerIndex]);
+                    ResetReceptionNakiCheck();
+                    break;
+                }
+            }
+            Debug.Log(logStr);
+        }
+    }
+
+    /// <summary>
+    /// 鳴きを実行する
+    /// </summary>
+    private void ExecuteNaki(int _nakiPlayerIndex, NakiKinds _nakiKind)
+    {
+        int sutePlayerIndex = (int)nowGameTurn / 2 - 1;
+        var sutePai = playerKawas[sutePlayerIndex].GetLastSutePai();
+        NakiPrefab.NakiPlace sutePlayerPlace = sutePlayerIndex - _nakiPlayerIndex <= 0 ?
+            (NakiPrefab.NakiPlace)(sutePlayerIndex - _nakiPlayerIndex + 4) : (NakiPrefab.NakiPlace)(sutePlayerIndex - _nakiPlayerIndex);
+
+        if (_nakiKind == NakiKinds.Ron)
+        {
+            KyokuFinishOfAgari(sutePai.myPaiStatus , (PlayerKind)(_nakiPlayerIndex + 1));
+        }
+        else
+        {
+            playerKawas[sutePlayerIndex].RemoveKawaLast();
+
+            if (_nakiKind == NakiKinds.Pon)
+            {
+                playerTehais[_nakiPlayerIndex].Pon(sutePlayerPlace, sutePai.myPaiStatus, sutePai.masterArrayNumber);
+            }
+            else if (_nakiKind == NakiKinds.ChiNumLow)
+            {
+                playerTehais[_nakiPlayerIndex].Chi(NakiPrefab.PaiOfChi.Low, sutePai.myPaiStatus, sutePai.masterArrayNumber);
+            }
+            else if (_nakiKind == NakiKinds.ChiNumMiddle)
+            {
+                playerTehais[_nakiPlayerIndex].Chi(NakiPrefab.PaiOfChi.Mid, sutePai.myPaiStatus, sutePai.masterArrayNumber);
+            }
+            else if (_nakiKind == NakiKinds.ChiNumHigh)
+            {
+                playerTehais[_nakiPlayerIndex].Chi(NakiPrefab.PaiOfChi.High, sutePai.myPaiStatus, sutePai.masterArrayNumber);
+            }
+            else if (_nakiKind == NakiKinds.MinKan)
+            {
+                playerTehais[_nakiPlayerIndex].Daiminkan(sutePlayerPlace, sutePai.myPaiStatus, sutePai.masterArrayNumber);
+            }
+
+            ReceptionUiNakiPrefabForChangeNakiWaitFlg(false);
+        }
+    }
+
+    /// <summary>
+    /// プレイヤーの鳴き希望を変える
+    /// </summary>
+    /// <param name="_nakiKind"></param>
+    private void ChangePlayerReceptionNaki(NakiKinds _nakiKind)
+    {
+        receptionNakiCheck[0] = _nakiKind;
+    }
+
+    /// <summary>
+    /// 流局(九種九牌or四風子連打)が可能かのフラグをFalseに切り替える
+    /// </summary>
+    private void ChangeRyukyokuAbleFlgFalse()
+    {
+        if (alreadyNakiFlg)
+        {
+            alreadyNakiFlg = false;
+            //Debug.Log("ChangeRyukyokuAbleFlg : Flg is Changed False");
         }
     }
 
@@ -1162,9 +2101,71 @@ public class MahjongManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator ActionKanCoroutine(PlayerKind _playerKind, bool _nakiFlg)
     {
-        yield return new WaitForSeconds(0.4f);
-        ActionTurn(_nakiFlg, true, _playerKind);
+        yield return new WaitForSeconds(TIME_KAN_INTERVAL);
+
+        if(_playerKind == PlayerKind.Player)
+        {
+            PlayerActionTurn(_nakiFlg, true, _playerKind);
+        }
+        else
+        {
+            
+        }
     }
+
+    /// <summary>
+    /// サポートを抽選する(タイムアタック用)
+    /// </summary>
+    /// <returns></returns>
+    private SupportSetForTimeAttack LotterySupportSetForTimeAttack()
+    {
+        SupportSetForTimeAttack result = new SupportSetForTimeAttack();
+
+        int numA = Random.Range(0, 100);
+        int numB = Random.Range(0, 81);
+
+        const int probabilityA = 5;
+        const int probabilityB = 20;
+        const int probabilityYaku = 10;
+
+        switch (numA)
+        {
+            case < probabilityA:
+                {
+                    result.rank = SupportSetForTimeAttack.Rank.A;
+                }
+                break;
+            case < probabilityB:
+                {
+                    result.rank = SupportSetForTimeAttack.Rank.B;
+                }
+                break;
+            default:
+                {
+                    result.rank = SupportSetForTimeAttack.Rank.C;
+                }
+                break;
+        }
+
+        for(int i = (int)SupportSetForTimeAttack.Yaku.SuAnKo; i <= (int)SupportSetForTimeAttack.Yaku.ChuRenPoTo; i++)
+        {
+            if(numB < probabilityYaku * i)
+            {
+                result.yaku = (SupportSetForTimeAttack.Yaku)i;
+                break;
+            }
+        }
+        if(result.yaku == SupportSetForTimeAttack.Yaku.None)
+        {
+            int numC = Random.Range(0, (int)(SupportSetForTimeAttack.Yaku.BeniKujaku - SupportSetForTimeAttack.Yaku.SuRenKo) + 1);
+            result.yaku = SupportSetForTimeAttack.Yaku.SuRenKo + numC;
+        }
+
+        Debug.Log($"LotterySupportSetForTimeAttack : rank = {result.rank} , yaku = {result.yaku}");
+        return result;
+    }
+
+#region 和了・聴牌のチェック
 
     /// <summary>
     /// 聴牌かどうかを調べ、その可否を返す
@@ -1205,7 +2206,7 @@ public class MahjongManager : MonoBehaviour
     /// <returns></returns>
     public bool CheckAgariAll(int[] _tehaiInformationList)
     {
-        if(_tehaiInformationList.Length != System.Enum.GetValues(typeof(PaiKinds)).Length)
+        if (_tehaiInformationList.Length != System.Enum.GetValues(typeof(PaiKinds)).Length)
         {
             Debug.LogWarning($"CheckAgari : Length Error , _tehaiInformationList.Length = {_tehaiInformationList.Length}");
             return false;
@@ -1223,13 +2224,13 @@ public class MahjongManager : MonoBehaviour
             }
 
             counter += _tehaiInformationList[i];
-            if(_tehaiInformationList[i] >= 2)
+            if (_tehaiInformationList[i] >= 2)
             {
                 toitsuList.Add(i);
                 if (_tehaiInformationList[i] >= 3)
                 {
                     kootsuList.Add(i);
-                    if(_tehaiInformationList[i] >= 5)
+                    if (_tehaiInformationList[i] >= 5)
                     {
                         return false;
                     }
@@ -1572,17 +2573,19 @@ public class MahjongManager : MonoBehaviour
     /// 局が和了で終わったとき
     /// </summary>
     /// <param name="_ronPai">ツモったときはnull</param>
-    private void KyokuFinishOfAgari(PaiStatus _ronPai)
+    private void KyokuFinishOfAgari(PaiStatus _ronPai , PlayerKind _agariPlayerKind)
     {
         nowGameTurn = GameTurn.Finish_Agari;
 
+        GetPlayerTehaiComponent(_agariPlayerKind).OpenMyTehaiAll();
+
         if (_ronPai == null) //ツモ和了
         {
-            uiManager.ReceptionMahjongManagerForAgari(PlayerKind.Player, null);
+            uiManager.ReceptionMahjongManagerForAgari(_agariPlayerKind, null);
         }
         else ////ロン和了
         {
-            uiManager.ReceptionMahjongManagerForAgari(PlayerKind.Player, _ronPai);
+            uiManager.ReceptionMahjongManagerForAgari(_agariPlayerKind, _ronPai);
         }
     }
 
@@ -1619,6 +2622,7 @@ public class MahjongManager : MonoBehaviour
         }
 
         if (CheckYakuTenho(_nakiList, _ronPai)) result = YakumanKind.TenHo;
+        else if (CheckYakuChiho(_nakiList, _ronPai)) result = YakumanKind.ChiHo;
         else if (CheckYakuSuAnKo(_tehaiInformation, _nakiList, _ronPai)) result = YakumanKind.SuAnKo;
         else if (CheckYakuSuKanTsu(_nakiList)) result = YakumanKind.SuKanTsu;
         else if (CheckYakuDaiSanGen(_tehaiInformation, _nakiList)) result = YakumanKind.DaiSanGen;
@@ -1664,6 +2668,7 @@ public class MahjongManager : MonoBehaviour
         return result;
     }
 
+#endregion
 
 #region 役の判定
 
@@ -1675,12 +2680,38 @@ public class MahjongManager : MonoBehaviour
     /// <returns></returns>
     private bool CheckYakuTenho(List<MentsuStatus> _nakiList, PaiKinds _ronPai)
     {
+        //Debug.Log($"nowTsumoCount = {nowTsumoCount} , _nakiList.Count = {_nakiList.Count} , _ronPai = {_ronPai}");
+
         //初手専用
-        if (nowPaiIndex > 1) return false;
+        if (nowTsumoCount != 1) return false;
         //面前のとき専用
         if (_nakiList.Count != 0) return false;
         //ツモのとき専用
         if (_ronPai != PaiKinds.None_00) return false;
+        //鳴きがどこにもないとき専用
+        if (alreadyNakiFlg == false) return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// 和了った役に地和が含まれるか確認する
+    /// </summary>
+    /// <param name="_nakiList"></param>
+    /// <param name="_ronPai"></param>
+    /// <returns></returns>
+    private bool CheckYakuChiho(List<MentsuStatus> _nakiList, PaiKinds _ronPai)
+    {
+        //Debug.Log($"nowTsumoCount = {nowTsumoCount} , _nakiList.Count = {_nakiList.Count} , _ronPai = {_ronPai}");
+
+        //初回のツモ専用
+        if (nowTsumoCount <= 1 || 5 <= nowTsumoCount) return false;
+        //面前のとき専用
+        if (_nakiList.Count != 0) return false;
+        //ツモのとき専用
+        if (_ronPai != PaiKinds.None_00) return false;
+        //鳴きがどこにもないとき専用
+        if (alreadyNakiFlg == false) return false;
 
         return true;
     }
@@ -1710,31 +2741,34 @@ public class MahjongManager : MonoBehaviour
         }
 
         List<PaiKinds> ankoList = new List<PaiKinds>(); //暗刻のリストを作成
-        foreach (var item in _tehaiInformation)
+
+        for (int i = 0; i < _tehaiInformation.Length; i++)
         {
-            if (item == 3)
+            if (_tehaiInformation[i] == 3)
             {
-                ankoList.Add((PaiKinds)item);
+                ankoList.Add((PaiKinds)i);
+            }
+            else if (_tehaiInformation[i] != 0 && _tehaiInformation[i] != 2)
+            {
+                return false;
             }
         }
 
         if (ankoList.Count + ankanCount != 4) return false; //暗刻(出和了りの明刻も含む)と暗槓の和が4個でないときをはじく
 
-        if (_ronPai == PaiKinds.None_00) //ツモのとき
-        {
-            return true;
-        }
-        else //ロンのとき
+        if (_ronPai != PaiKinds.None_00) //ロンのとき
         {
             foreach (var item in ankoList) //ロン牌が明刻でなかったか確認する
             {
+                //Debug.Log($"item = {item} , _ronPai = {_ronPai}");
                 if (item == _ronPai)
                 {
                     return false;
                 }
             }
-            return true;
         }
+
+        return true;
     }
 
     /// <summary>
@@ -1906,7 +2940,8 @@ public class MahjongManager : MonoBehaviour
     {
         foreach (var item in _nakiList)
         {
-            if(item.mentsuKind == MentsuKinds.Juntsu)
+            //Debug.Log($"item.mentsuKind = {item.mentsuKind} , item.iroKinds = {item.iroKinds}");
+            if (item.mentsuKind == MentsuKinds.Juntsu)
             {
                 return false;
             }
@@ -1916,9 +2951,10 @@ public class MahjongManager : MonoBehaviour
             }
             else
             {
-                int num = (int)item.mentsuKind % 10;
+                int num = (int)item.minimumPai % 10;
                 if (1 != num && 9 != num)
                 {
+                    //Debug.Log($"num = {num}");
                     return false;
                 }
             }
@@ -1928,9 +2964,10 @@ public class MahjongManager : MonoBehaviour
         {
             if (_tehaiInformation[i] > 0)
             {
-                int num = _tehaiInformation[i] % 10;
+                int num = i % 10;
                 if (1 != num && 9 != num)
                 {
+                    //Debug.Log($"num = {num}");
                     return false;
                 }
             }
@@ -2004,6 +3041,7 @@ public class MahjongManager : MonoBehaviour
         if (_nakiList.Count != 0) return false; //面前のとき専用
 
         IroKinds iro = CheckYakuChinIiSo(_tehaiInformation, _nakiList); //清一色のとき限定
+
         if (iro == IroKinds.None)
         {
             return false;
@@ -2037,16 +3075,27 @@ public class MahjongManager : MonoBehaviour
     {
         IroKinds kouho = IroKinds.None;
 
+        //string str = "";
+        //for(int i = 0; i < _tehaiInformation.Length; i++)
+        //{
+        //    str += $"[{i}->{_tehaiInformation[i]}]";
+        //}
+        //Debug.Log($"{str}");
+
         for (int i = 0; i < _tehaiInformation.Length; i++)
         {
+            if (_tehaiInformation[i] <= 0) continue;
+
             if(kouho == IroKinds.None)
             {
                 kouho = (IroKinds)((i + 10) / 10);
+                //Debug.Log($"kouho = {kouho}");
             }
             else
             {
                 if (kouho != (IroKinds)((i + 10) / 10))
                 {
+                    //Debug.Log($"kouho = {kouho} , aite = {(IroKinds)((i + 10) / 10)} , i = {i}");
                     return IroKinds.None;
                 }
             }
@@ -2054,6 +3103,7 @@ public class MahjongManager : MonoBehaviour
 
         foreach (var item in _nakiList)
         {
+            //Debug.Log($"kouho = {kouho} , aite = {item.iroKinds}");
             if (item.iroKinds != kouho) return IroKinds.None;
         }
 
@@ -2075,7 +3125,7 @@ public class MahjongManager : MonoBehaviour
     /// <returns></returns>
     private bool CheckYakuSuRenKo(int[] _tehaiInformation, List<MentsuStatus> _nakiList)
     {
-        List<PaiKinds> kootsuList = new List<PaiKinds>(); //暗刻のリストを作成
+        List<PaiKinds> kootsuList = new List<PaiKinds>(); //刻子のリストを作成
 
         foreach (var item in _nakiList)
         {
@@ -2089,11 +3139,15 @@ public class MahjongManager : MonoBehaviour
             }
         }
 
-        foreach (var item in _tehaiInformation)
+        for (int i = 0; i < _tehaiInformation.Length; i++)
         {
-            if (item == 3)
+            if (_tehaiInformation[i] == 3)
             {
-                kootsuList.Add((PaiKinds)item);
+                kootsuList.Add((PaiKinds)i);
+            }
+            else if (_tehaiInformation[i] != 0 && _tehaiInformation[i] != 2)
+            {
+                return false;
             }
         }
 
@@ -2101,10 +3155,7 @@ public class MahjongManager : MonoBehaviour
 
         kootsuList.Sort((a, b) => a.CompareTo(b)); //刻子リストをソート
 
-        if (kootsuList[0] >= PaiKinds.None_30) //字牌ならはじく
-        {
-            return false;
-        }
+        if (kootsuList[0] >= PaiKinds.None_30) return false; //字牌ならはじく
 
         for (int i = 0; i < kootsuList.Count - 1; i++)
         {
@@ -2274,6 +3325,8 @@ public class MahjongManager : MonoBehaviour
     public void ReceptionPlayerTehaiForTurnEnd()
     {
         NextGameTurn();
+        ChangePlayerReceptionNaki(NakiKinds.Through);
+
     }
 
     /// <summary>
@@ -2284,23 +3337,22 @@ public class MahjongManager : MonoBehaviour
         switch (_playerKind)
         {
             case PlayerKind.Player:
-                nowGameTurn = GameTurn.Ton_Tsumo;
+                nowGameTurn = GameTurn.Player_Tsumo;
                 break;
             case PlayerKind.Shimocha:
-                nowGameTurn = GameTurn.Nan_Tsumo;
+                nowGameTurn = GameTurn.Shimocha_Tsumo;
                 break;
             case PlayerKind.Toimen:
-                nowGameTurn = GameTurn.Sha_Tsumo;
+                nowGameTurn = GameTurn.Toimen_Tsumo;
                 break;
             case PlayerKind.Kamicha:
-                nowGameTurn = GameTurn.Pe_Tsumo;
+                nowGameTurn = GameTurn.Kamicha_Tsumo;
                 break;
         }
 
-        if (_kanFlg)
-        {
-            ActionKan(_playerKind, true);
-        }
+        ChangeRyukyokuAbleFlgFalse();
+
+        if (_kanFlg) ActionKan(_playerKind, true);
     }
 
     /// <summary>
@@ -2309,6 +3361,8 @@ public class MahjongManager : MonoBehaviour
     /// <param name="_playerKind"></param>
     public void ReceptionPlayerTehaiForKanOfMyTurn(PlayerKind _playerKind)
     {
+        playerTehais[0].ChangeTehaiChangeInteractableTap(null);
+        ChangeRyukyokuAbleFlgFalse();
         ActionKan(_playerKind, false);
     }
 
@@ -2318,7 +3372,7 @@ public class MahjongManager : MonoBehaviour
     /// <param name="_totalNumber"></param>
     public void ReceptionPaiPrefab(int _totalNumber)
     {
-        if (nowGameTurn != GameTurn.Ton_Tsumo) return;
+        if (nowGameTurn != GameTurn.Player_Tsumo) return;
 
         bool errorFlg = false;
         int index = playerTehais[0].CheckHavePai(_totalNumber);
@@ -2363,6 +3417,8 @@ public class MahjongManager : MonoBehaviour
                     {
                         playerTehais[0].Kakan(pai);
                     }
+                    uiManager.ReceptionPlayerSelectKan();
+                    ReceptionUiTurnActionForCancel();
                 }
                 else
                 {
@@ -2383,7 +3439,7 @@ public class MahjongManager : MonoBehaviour
     /// <param name="flg"></param>
     public void ReceptionUiNakiPrefabForChangeNakiWaitFlg(bool flg)
     {
-        nakiWaitFlg = flg;
+        playerNakiWaitFlg = flg;
 
         if (playerTehais[0].GetReachTurn() != INDEX_NONE) //立直していたとき
         {
@@ -2393,6 +3449,7 @@ public class MahjongManager : MonoBehaviour
         foreach(var item in playerKawas) //演出をキャンセルする
         {
             item.SetRonPaiAura(false);
+            item.SetNakiPaiObjects(false);
         }
     }
 
@@ -2413,7 +3470,8 @@ public class MahjongManager : MonoBehaviour
     {
         if (_actionKind == TurnActionKind.Tsumo)
         {
-            KyokuFinishOfAgari(null);
+            KyokuFinishOfAgari(null, PlayerKind.Player);
+            playerTehais[0].SetTsumoPaiFire(false);
         }
         else if (_actionKind == TurnActionKind.Ryuukyoku)
         {
@@ -2458,42 +3516,29 @@ public class MahjongManager : MonoBehaviour
     /// <param name="_nakiKind"></param>
     public void ReceptionUiNakiPrefabForNaki(NakiKinds _nakiKind)
     {
-        int playerIndex = (int)nowGameTurn / 2;
-        var sutePai = playerKawas[playerIndex - 1].GetLastSutePai();
+        ChangePlayerReceptionNaki(_nakiKind);
 
-        if (_nakiKind == NakiKinds.Ron)
+        ReceptionUiNakiPrefabForChangeNakiWaitFlg(false);
+    }
+
+    /// <summary>
+    /// 局が終わって次に進むボタンを押したことを受信したとき
+    /// </summary>
+    public void ReceptionKyokuFinishPanelGoNext(bool _clearFlg)
+    {
+        if (_clearFlg) clearCount++;
+
+        if(clearCount > 3)
         {
-            KyokuFinishOfAgari(sutePai.myPaiStatus);
+
         }
         else
         {
-            playerKawas[playerIndex - 1].RemoveKawaLast();
 
-            if (_nakiKind == NakiKinds.Pon)
-            {
-                playerTehais[0].Pon((NakiPrefab.NakiPlace)(playerIndex - 1), sutePai.myPaiStatus, sutePai.masterArrayNumber);
-            }
-            else if (_nakiKind == NakiKinds.ChiNumSmall)
-            {
-                playerTehais[0].Chi(NakiPrefab.PaiOfChi.Low, sutePai.myPaiStatus, sutePai.masterArrayNumber);
-            }
-            else if (_nakiKind == NakiKinds.ChiNumMiddle)
-            {
-                playerTehais[0].Chi(NakiPrefab.PaiOfChi.Mid, sutePai.myPaiStatus, sutePai.masterArrayNumber);
-            }
-            else if (_nakiKind == NakiKinds.ChiNumBig)
-            {
-                playerTehais[0].Chi(NakiPrefab.PaiOfChi.High, sutePai.myPaiStatus, sutePai.masterArrayNumber);
-            }
-            else if (_nakiKind == NakiKinds.MinKan)
-            {
-                playerTehais[0].Daiminkan((NakiPrefab.NakiPlace)(playerIndex - 1), sutePai.myPaiStatus, sutePai.masterArrayNumber);
-            }
-
-            ReceptionUiNakiPrefabForChangeNakiWaitFlg(false);
         }
-    }
 
+        ResetKyoku(false);
+    }
 
 #endregion
 
@@ -2548,6 +3593,15 @@ public class MahjongManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 牌サイズの真っ白なスプライトを返すゲッター
+    /// </summary>
+    /// <returns></returns>
+    public Sprite GetGaraSpriteWhite()
+    {
+        return whiteSprite;
+    }
+
+    /// <summary>
     /// 手牌の位置を返すゲッター
     /// </summary>
     /// <param name="_playerKind"></param>
@@ -2556,6 +3610,9 @@ public class MahjongManager : MonoBehaviour
     public Vector3 GetPositionTehai(PlayerKind _playerKind,int _positionNumber,bool _tsumoFlg)
     {
         Vector3 result;
+
+        const float TSUMO_DISTANCE = 0.5f;
+
         if (_positionNumber < 0 || 13 < _positionNumber)
         {
             Debug.LogWarning($"GetPositionTehai : Error , _positionNumber = {_positionNumber}");
@@ -2564,22 +3621,22 @@ public class MahjongManager : MonoBehaviour
         else if (_playerKind == PlayerKind.Player)
         {
             result = DEFAULT_POSITION_TEHAI_PLAYER + new Vector3(2 * _positionNumber, 0, 0);
-            if (_tsumoFlg) result.x += 1;
+            if (_tsumoFlg) result.x += TSUMO_DISTANCE;
         }
         else if (_playerKind == PlayerKind.Shimocha)
         {
             result = DEFAULT_POSITION_TEHAI_SHIMOCHA + new Vector3(0, 0, 2 * _positionNumber);
-            if (_tsumoFlg) result.z += 1;
+            if (_tsumoFlg) result.z += TSUMO_DISTANCE;
         }
         else if (_playerKind == PlayerKind.Toimen)
         {
             result = DEFAULT_POSITION_TEHAI_TOIMEN + new Vector3(-2 * _positionNumber, 0, 0);
-            if (_tsumoFlg) result.x -= 1;
+            if (_tsumoFlg) result.x -= TSUMO_DISTANCE;
         }
         else if (_playerKind == PlayerKind.Kamicha)
         {
             result = DEFAULT_POSITION_TEHAI_KAMICHA + new Vector3(0, 0, -2 * _positionNumber);
-            if (_tsumoFlg) result.z -= 1;
+            if (_tsumoFlg) result.z -= TSUMO_DISTANCE;
         }
         else
         {
@@ -2597,6 +3654,9 @@ public class MahjongManager : MonoBehaviour
     public Vector3 GetPositionNaki(PlayerKind _playerKind, int _nakiCount)
     {
         Vector3 result;
+
+        const float TACHA_DISTANCE = 7.0f;
+
         if (_nakiCount < 0 || 3 < _nakiCount)
         {
             Debug.LogWarning($"GetPositionNaki : Error , _nakiCount = {_nakiCount}");
@@ -2611,15 +3671,15 @@ public class MahjongManager : MonoBehaviour
         }
         else if (_playerKind == PlayerKind.Shimocha)
         {
-            result = DEFAULT_POSITION_NAKI_SHIMOCHA + new Vector3(0, 0, -6.5f * _nakiCount);
+            result = DEFAULT_POSITION_NAKI_SHIMOCHA + new Vector3(0, 0, -TACHA_DISTANCE * _nakiCount);
         }
         else if (_playerKind == PlayerKind.Toimen)
         {
-            result = DEFAULT_POSITION_NAKI_TOIMEN + new Vector3(6.5f * _nakiCount, 0, 0);
+            result = DEFAULT_POSITION_NAKI_TOIMEN + new Vector3(TACHA_DISTANCE * _nakiCount, 0, 0);
         }
         else if (_playerKind == PlayerKind.Kamicha)
         {
-            result = DEFAULT_POSITION_NAKI_KAMICHA + new Vector3(0, 0, 6.5f * _nakiCount);
+            result = DEFAULT_POSITION_NAKI_KAMICHA + new Vector3(0, 0, TACHA_DISTANCE * _nakiCount);
         }
         else
         {
@@ -2734,7 +3794,7 @@ public class MahjongManager : MonoBehaviour
                 _retsu--;
                 _gyou += NUM_KUGIRI;
             }
-            result = DEFAULT_POSITION_KAWA_KAMICHA + new Vector3(- 2.75f * _retsu, 0.9f, - 2 * _gyou - (_reachCoefficient * 0.3f));
+            result = DEFAULT_POSITION_KAWA_KAMICHA + new Vector3(- 2.75f * _retsu, 0f, - 2 * _gyou - (_reachCoefficient * 0.3f));
         }
 
 #endif
@@ -2817,6 +3877,40 @@ public class MahjongManager : MonoBehaviour
     public Vector3 GetRotationUra()
     {
         return DEFAULT_ROTATE_URA;
+    }
+
+    /// <summary>
+    /// 鳴きメンツの回転角を返すゲッター
+    /// </summary>
+    /// <param name="_playerKind"></param>
+    /// <returns></returns>
+    public Vector3 GetRotationNaki(PlayerKind _playerKind)
+    {
+        Vector3 result;
+
+        if (_playerKind == PlayerKind.Player)
+        {
+            result = DEFAULT_ROTATE_NAKI_PLAYER;
+        }
+        else if (_playerKind == PlayerKind.Shimocha)
+        {
+            result = DEFAULT_ROTATE_NAKI_SHIMOCHA;
+        }
+        else if (_playerKind == PlayerKind.Toimen)
+        {
+            result = DEFAULT_ROTATE_NAKI_TOIMEN;
+        }
+        else if (_playerKind == PlayerKind.Kamicha)
+        {
+            result = DEFAULT_ROTATE_NAKI_KAMICHA;
+        }
+        else
+        {
+            Debug.LogWarning($"GetRotationNaki : Error , _playerKind = {_playerKind}");
+            result = Vector3.zero;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -2950,8 +4044,8 @@ public class MahjongManager : MonoBehaviour
     /// <returns></returns>
     public bool GetNowTurnSute()
     {
-        return nowGameTurn == GameTurn.Ton_Sute || nowGameTurn == GameTurn.Nan_Sute ||
-            nowGameTurn == GameTurn.Sha_Sute || nowGameTurn == GameTurn.Pe_Sute;
+        return nowGameTurn == GameTurn.Player_Sute || nowGameTurn == GameTurn.Shimocha_Sute ||
+            nowGameTurn == GameTurn.Toimen_Sute || nowGameTurn == GameTurn.Kamicha_Sute;
     }
 
     /// <summary>
@@ -2960,8 +4054,8 @@ public class MahjongManager : MonoBehaviour
     /// <returns></returns>
     public bool GetNowTurnTsumo()
     {
-        return nowGameTurn == GameTurn.Ton_Tsumo || nowGameTurn == GameTurn.Nan_Tsumo ||
-            nowGameTurn == GameTurn.Sha_Tsumo || nowGameTurn == GameTurn.Pe_Tsumo;
+        return nowGameTurn == GameTurn.Player_Tsumo || nowGameTurn == GameTurn.Shimocha_Tsumo ||
+            nowGameTurn == GameTurn.Toimen_Tsumo || nowGameTurn == GameTurn.Kamicha_Tsumo;
     }
 
     /// <summary>
@@ -3093,6 +4187,157 @@ public class MahjongManager : MonoBehaviour
         return result;
     }
 
+    /// <summary>
+    /// 場に見えている牌のリストから、引数の牌の枚数を返すゲッター
+    /// </summary>
+    /// <param name="_paiKind">探したい牌の種類</param>
+    /// <returns></returns>
+    public int GetLookPaiCount(PaiKinds _paiKind)
+    {
+        int counter = 0;
+
+        foreach(var item in GetLookPaiAll())
+        {
+            if (_paiKind == item) counter++;
+        }
+
+        //Debug.Log($"GetLookPaiCount : {_paiKind} counter = {counter}");
+
+        return counter;
+    }
+
+    /// <summary>
+    /// 場に見えている牌のリストを作って返すゲッター
+    /// </summary>
+    /// <returns></returns>
+    public List<PaiKinds> GetLookPaiAll()
+    {
+        List<PaiKinds> resultList = new List<PaiKinds>();
+
+        List<PlayerKawa.PaiStatusForKawa> kawaList;
+        List<MentsuStatus> nakiList;
+
+        // 全プレイヤーを対象
+        for (int i = 0; i < 4; i++)
+        {
+            // 河にある牌をリストに追加する
+            kawaList = new List<PlayerKawa.PaiStatusForKawa>();
+            kawaList = GetPlayerKawaComponent((PlayerKind)(i + 1)).GetKawaAll();
+            foreach (var item in kawaList)
+            {
+                resultList.Add(item.myPaiStatus.thisKind);
+            }
+
+            // 鳴きにある牌をリストに追加する
+            nakiList = new List<MentsuStatus>();
+            nakiList = GetPlayerTehaiComponent((PlayerKind)(i + 1)).GetNakis();
+            foreach (var item in nakiList)
+            {
+                if(item.mentsuKind == MentsuKinds.Kantsu)
+                {
+                    for (int j = 0; j < 4; j++)
+                    {
+                        resultList.Add(item.minimumPai);
+                    }
+                }
+                else if (item.mentsuKind == MentsuKinds.Kootsu)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        resultList.Add(item.minimumPai);
+                    }
+                }
+                else if (item.mentsuKind == MentsuKinds.Juntsu)
+                {
+                    resultList.Add(item.minimumPai);
+                    resultList.Add(item.minimumPai + 1);
+                    resultList.Add(item.minimumPai + 2);
+                }
+                else
+                {
+                    Debug.LogError($"GetLookPaiAll : Error , item.mentsuKind = {item.mentsuKind}");
+                }
+            }
+        }
+
+        //ドラ表示牌をリストに追加する
+        foreach (var item in wanpai.GetDoraHyoujiList())
+        {
+            //Debug.Log($"GetLookPaiAll : Dora HyoujiPai is {item}");
+            resultList.Add(item);
+        }
+
+        return resultList;
+    }
+
+    /// <summary>
+    /// 和了った手牌から役満を返すゲッター
+    /// </summary>
+    /// <param name="_tehaiList"></param>
+    /// <param name="_nakiList"></param>
+    /// <param name="_ronPai"></param>
+    /// <returns></returns>
+    public List<YakumanKind> GetYakumanList(List<PaiStatus> _tehaiList, List<MentsuStatus> _nakiList, PaiKinds _ronPai)
+    {
+        List<YakumanKind> resultList = new List<YakumanKind>();
+
+        int[] _tehaiInformation = new int[System.Enum.GetValues(typeof(PaiKinds)).Length];
+
+        foreach (var item in _tehaiList) //手牌のリストを作成
+        {
+            _tehaiInformation[(int)item.thisKind]++;
+        }
+        if (_ronPai != PaiKinds.None_00)
+        {
+            _tehaiInformation[(int)_ronPai]++;
+        }
+
+        if (CheckYakuTenho(_nakiList, _ronPai)) resultList.Add(YakumanKind.TenHo);
+        if (CheckYakuChiho(_nakiList, _ronPai)) resultList.Add(YakumanKind.ChiHo);
+        if (CheckYakuSuAnKo(_tehaiInformation, _nakiList, _ronPai)) resultList.Add(YakumanKind.SuAnKo);
+        if (CheckYakuSuKanTsu(_nakiList)) resultList.Add(YakumanKind.SuKanTsu);
+        if (CheckYakuDaiSanGen(_tehaiInformation, _nakiList)) resultList.Add(YakumanKind.DaiSanGen);
+        if (CheckYakuSyouSuuShi(_tehaiInformation, _nakiList)) resultList.Add(YakumanKind.SyouSuuShi);
+        if (CheckYakuDaiSuuShi(_tehaiInformation, _nakiList)) resultList.Add(YakumanKind.DaiSuuShi);
+        if (CheckYakuTsuIiSo(_tehaiInformation, _nakiList)) resultList.Add(YakumanKind.TsuIiSo);
+        if (CheckYakuChinRouTo(_tehaiInformation, _nakiList)) resultList.Add(YakumanKind.ChinRouTo);
+        if (CheckYakuRyuIiSo(_tehaiInformation, _nakiList)) resultList.Add(YakumanKind.RyuIiSo);
+        if (CheckYakuKokuShiMuSou(_tehaiInformation, _nakiList)) resultList.Add(YakumanKind.KokuShiMuSou);
+        if (CheckYakuChuRenPoTo(_tehaiInformation, _nakiList)) resultList.Add(YakumanKind.ChuRenPoTo);
+
+        return resultList;
+    }
+
+    /// <summary>
+    /// 和了った手牌からローカル役満を返すゲッター
+    /// </summary>
+    /// <param name="_tehaiList"></param>
+    /// <param name="_nakiList"></param>
+    /// <param name="_ronPai"></param>
+    /// <returns></returns>
+    public List<YakumanOfLocalKind> GetLocalYakumanList(List<PaiStatus> _tehaiList, List<MentsuStatus> _nakiList, PaiKinds _ronPai)
+    {
+        List<YakumanOfLocalKind> resultList = new List<YakumanOfLocalKind>();
+
+        int[] _tehaiInformation = new int[System.Enum.GetValues(typeof(PaiKinds)).Length];
+
+        foreach (var item in _tehaiList) //手牌のリストを作成
+        {
+            _tehaiInformation[(int)item.thisKind]++;
+        }
+        if (_ronPai != PaiKinds.None_00)
+        {
+            _tehaiInformation[(int)_ronPai]++;
+        }
+
+        if (CheckYakuSuRenKo(_tehaiInformation, _nakiList)) resultList.Add(YakumanOfLocalKind.SuRenKo);
+        if (CheckYakuHyakuManGoku(_tehaiInformation, _nakiList)) resultList.Add(YakumanOfLocalKind.HyakuManGoku);
+        if (CheckYakuDaiShaRin(_tehaiInformation, _nakiList)) resultList.Add(YakumanOfLocalKind.DaiShaRin);
+        if (CheckYakuBeniKujaku(_tehaiInformation, _nakiList)) resultList.Add(YakumanOfLocalKind.BeniKujaku);
+        if (CheckYakuDaiChiShin(_tehaiInformation, _nakiList)) resultList.Add(YakumanOfLocalKind.DaiChiShin);
+
+        return resultList;
+    }
 
 #endregion
 
@@ -3228,36 +4473,43 @@ public class MahjongManager : MonoBehaviour
 
                     UiManagerChangeKyokuText();
 
-                    ResetKyoku();
+                    ResetKyoku(true);
 
                     DealHaiPai();
 
                     wanpai.MakeDoraHyouji();
 
-                    StartCoroutine(TestCoroutine(1));
-
+                    StartCoroutine(ResetKyokuCoroutine());
                 }
                 break;
             case 4: // なにで和了れるかを出力する
                 {
-                    int[] copyTehaiInformationList = new int[playerTehais[0].GetTehaiInformation().Length];
-                    System.Array.Copy(playerTehais[0].GetTehaiInformation(), copyTehaiInformationList, playerTehais[0].GetTehaiInformation().Length);
-
-                    if (nowGameTurn == GameTurn.Ton_Tsumo) copyTehaiInformationList[(int)paiyama[nowPaiIndex-1].thisKind]--;
-
-                    string str = "Tenpai : ";
-                    for (int i = 0; i < copyTehaiInformationList.Length; i++)
+                    string str = "";
+                    for (int playerIndex = 0; playerIndex < playerTehais.Length; playerIndex++)
                     {
-                        if (i % 10 == 0) continue;
-                        int[] copyCopyTehaiInformationList = new int[copyTehaiInformationList.Length];
-                        System.Array.Copy(copyTehaiInformationList, copyCopyTehaiInformationList, copyTehaiInformationList.Length);
+                        int[] copyTehaiInformationList = new int[playerTehais[playerIndex].GetTehaiInformation().Length];
+                        System.Array.Copy(playerTehais[playerIndex].GetTehaiInformation(), copyTehaiInformationList, playerTehais[playerIndex].GetTehaiInformation().Length);
 
-                        copyCopyTehaiInformationList[i]++;
-                        bool result = CheckAgariAll(copyCopyTehaiInformationList);
-                        if (result)
+                        if (playerIndex == 0 && nowGameTurn == GameTurn.Player_Tsumo) copyTehaiInformationList[(int)paiyama[nowPaiIndex - 1].thisKind]--;
+                        if (playerIndex == 1 && nowGameTurn == GameTurn.Shimocha_Tsumo) copyTehaiInformationList[(int)paiyama[nowPaiIndex - 1].thisKind]--;
+                        if (playerIndex == 2 && nowGameTurn == GameTurn.Toimen_Tsumo) copyTehaiInformationList[(int)paiyama[nowPaiIndex - 1].thisKind]--;
+                        if (playerIndex == 3 && nowGameTurn == GameTurn.Kamicha_Tsumo) copyTehaiInformationList[(int)paiyama[nowPaiIndex - 1].thisKind]--;
+
+                        str += $"[{(PlayerKind)(playerIndex + 1)}]Tenpai : ";
+                        for (int i = 0; i < copyTehaiInformationList.Length; i++)
                         {
-                            str += $"{(PaiKinds)i}, ";
+                            if (i % 10 == 0) continue;
+                            int[] copyCopyTehaiInformationList = new int[copyTehaiInformationList.Length];
+                            System.Array.Copy(copyTehaiInformationList, copyCopyTehaiInformationList, copyTehaiInformationList.Length);
+
+                            copyCopyTehaiInformationList[i]++;
+                            bool result = CheckAgariAll(copyCopyTehaiInformationList);
+                            if (result)
+                            {
+                                str += $"{(PaiKinds)i}, ";
+                            }
                         }
+                        if (playerIndex != playerTehais.Length - 1) str += "\n";
                     }
 
                     Debug.Log($"{str}");
@@ -3281,17 +4533,7 @@ public class MahjongManager : MonoBehaviour
         {
             case 1:
                 {
-                    foreach (var item in playerTehais)
-                    {
-                        item.MakeAllTehaiObjects();
-                    }
-                    yield return new WaitForSeconds(1f);
-                    foreach (var item in playerTehais)
-                    {
-                        item.RiiPai();
-                    }
-                    yield return new WaitForSeconds(1f);
-                    NextGameTurn();
+
                 }
                 break;
             case 2:
@@ -3306,4 +4548,5 @@ public class MahjongManager : MonoBehaviour
     }
 
 #endregion
+
 }

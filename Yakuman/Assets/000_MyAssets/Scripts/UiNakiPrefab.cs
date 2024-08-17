@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEditor;
 
 public class UiNakiPrefab : MonoBehaviour
 {
@@ -76,11 +77,11 @@ public class UiNakiPrefab : MonoBehaviour
         if (counter == 1)
         {
             if (flgAbleChiL)
-                MahjongManager.Instance.ReceptionUiNakiPrefabForNaki(MahjongManager.NakiKinds.ChiNumSmall);
+                MahjongManager.Instance.ReceptionUiNakiPrefabForNaki(MahjongManager.NakiKinds.ChiNumLow);
             else if (flgAbleChiM)
                 MahjongManager.Instance.ReceptionUiNakiPrefabForNaki(MahjongManager.NakiKinds.ChiNumMiddle);
             else if (flgAbleChiH)
-                MahjongManager.Instance.ReceptionUiNakiPrefabForNaki(MahjongManager.NakiKinds.ChiNumBig);
+                MahjongManager.Instance.ReceptionUiNakiPrefabForNaki(MahjongManager.NakiKinds.ChiNumHigh);
 
             Destroy(gameObject);
         }
@@ -140,7 +141,7 @@ public class UiNakiPrefab : MonoBehaviour
 
         if (flgAbleChiL)
         {
-            chiSelectButtonPrefabs.Add(InstantiateChiSelectButtonPrefab(paiKind, MahjongManager.NakiKinds.ChiNumSmall, this));
+            chiSelectButtonPrefabs.Add(InstantiateChiSelectButtonPrefab(paiKind, MahjongManager.NakiKinds.ChiNumLow, this));
         }
         if (flgAbleChiM)
         {
@@ -148,7 +149,7 @@ public class UiNakiPrefab : MonoBehaviour
         }
         if (flgAbleChiH)
         {
-            chiSelectButtonPrefabs.Add(InstantiateChiSelectButtonPrefab(paiKind, MahjongManager.NakiKinds.ChiNumBig, this));
+            chiSelectButtonPrefabs.Add(InstantiateChiSelectButtonPrefab(paiKind, MahjongManager.NakiKinds.ChiNumHigh, this));
         }
     }
 
@@ -165,4 +166,35 @@ public class UiNakiPrefab : MonoBehaviour
         Destroy(gameObject);
     }
 
+    /// <summary>
+    /// インスペクターのボタンを押したとき
+    /// </summary>
+    public void InspectorButtonFunction()
+    {
+        Debug.Log($"InspectorButtonFunction : Display UiNakiPrefab Status\n" +
+            $"paiKind = {paiKind}\n" +
+            $"flgAbleRon = {flgAbleRon}\n" +
+            $"flgAbleKan = {flgAbleKan}\n" +
+            $"flgAblePon = {flgAblePon}\n" +
+            $"flgAbleChiL = {flgAbleChiL}\n" +
+            $"flgAbleChiM = {flgAbleChiM}\n" +
+            $"flgAbleChiH = {flgAbleChiH}\n" +
+            $"flgFriten = {flgFriten}\n");
+    }
+}
+
+[CustomEditor(typeof(UiNakiPrefab))] // NakiPrefabを拡張する
+public class UiNakiPrefabDisplayLog : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        base.OnInspectorGUI();
+
+        if (GUILayout.Button("Display Log of Status"))
+        {
+            UiNakiPrefab yourScript = (UiNakiPrefab)target;
+            yourScript.InspectorButtonFunction();
+        }
+
+    }
 }

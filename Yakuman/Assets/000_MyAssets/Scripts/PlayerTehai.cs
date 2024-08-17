@@ -215,47 +215,83 @@ public class PlayerTehai : MonoBehaviour
     public void SuteThink()
     {
         int index = 0;
+        bool reachFlg = false;
+        bool tsumoGiriFlg = false;
+        MahjongManager.PaiStatus tsumoPai = GetPaiStatusTehaiOfRight();
 
-        int highPoint = -1;
-        for (int i = 0; i < myTehais.Count; i++)
+        if (GetReachTurn() != MahjongManager.INDEX_NONE) // リーチしているとき
         {
-            int thisPoint = ReturnBackiPriorityPointForSute(myTehais[i]);
-            if (thisPoint > highPoint)
-            {
-                highPoint = thisPoint;
-                index = i;
-            }
+            tsumoGiriFlg = true;
         }
+        else
+        {
+            // ここに各CPUごとの思考
+            var kouhoPai = GameModeManager.Instance.GetCpu(myPlayerKind).Sute(tsumoPai.thisKind, tehaiInformation, myNakis);
 
-        StartCoroutine(SuteStaging(index, false));
-    }
-
-    /// <summary>
-    /// 牌を考えて切るために評価値を決めて返す
-    /// </summary>
-    /// <param name="_paiStatus"></param>
-    /// <returns></returns>
-    private int ReturnBackiPriorityPointForSute(PaiStatusForTehai _paiStatus)
-    {
-        var _paiKind = _paiStatus.myPaiStatus.thisKind;
-
-        int point = 0;
-
-        {   // このカッコ内で評価値を決める
-            if (_paiKind >= MahjongManager.PaiKinds.J1)
+            if (kouhoPai == MahjongManager.PaiKinds.None_00)
             {
-                point = (int)_paiKind % 10;
+                tsumoGiriFlg = true;
             }
             else
             {
-                int num = (int)_paiKind % 10;
-                if (num > 5) num = 10 - num;
-                point = (num * 10) + ((int)_paiKind / 10);
+                bool checkFlg = false;
+                for (int i = 0; i < myTehais.Count; i++)
+                {
+                    if (myTehais[i].myPaiPrefab.GetThisKind() == kouhoPai)
+                    {
+                        index = i;
+                        checkFlg = true;
+                        break;
+                    }
+                }
+                if (!checkFlg)
+                {
+                    Debug.LogError("SuteThink : Error");
+                    tsumoGiriFlg = true;
+                }
             }
-            point = 100 - point;
         }
 
-        return point;
+        if (tsumoGiriFlg)
+        {
+            index = CheckHavePai(tsumoPai.totalNumber);
+        }
+
+        StartCoroutine(SuteStaging(index, reachFlg));
+    }
+
+    /// <summary>
+    /// 牌を鳴くか考える
+    /// </summary>
+    /// <param name="_sutePai">鳴くかを決めるために該当する牌</param>
+    /// <param name="_sutePlayer">捨てた人</param>
+    /// <returns></returns>
+    public MahjongManager.NakiKinds NakiThink(MahjongManager.PaiKinds _sutePai , MahjongManager.PlayerKind _sutePlayer)
+    {
+        if (_sutePlayer == myPlayerKind) return MahjongManager.NakiKinds.Through;
+
+        MahjongManager.NakiKinds result;
+
+        bool flgRon = GetAbleRon(_sutePai);
+        if (flgRon) flgRon = !MahjongManager.Instance.GetPlayerKawaComponent(myPlayerKind).CheckFuriten(GetTehaiInformation(), _sutePlayer);
+
+        if (flgRon)
+        {
+            result = MahjongManager.NakiKinds.Ron;
+        }
+        else
+        {
+            if (GetReachTurn() != MahjongManager.INDEX_NONE) // リーチしているとき
+            {
+                result = MahjongManager.NakiKinds.Through;
+            }
+            else // リーチしていないとき
+            {
+                result = GameModeManager.Instance.GetCpu(myPlayerKind).Naki(_sutePai, tehaiInformation, myNakis, myPlayerKind, _sutePlayer);
+            }
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -444,6 +480,7 @@ public class PlayerTehai : MonoBehaviour
 
         int _nakiCount = (14 - myTehais.Count) / 3;
         _ankanPrefab.ChangeTransformPosition(MahjongManager.Instance.GetPositionNaki(myPlayerKind, _nakiCount));
+        _ankanPrefab.ChangeTransformRotate(MahjongManager.Instance.GetRotationNaki(myPlayerKind));
 
         DeleteForNaki(index4);
         DeleteForNaki(index3);
@@ -560,6 +597,7 @@ public class PlayerTehai : MonoBehaviour
 
         int _nakiCount = (13 - myTehais.Count) / 3;
         _nakiPrefab.ChangeTransformPosition(MahjongManager.Instance.GetPositionNaki(myPlayerKind, _nakiCount));
+        _nakiPrefab.ChangeTransformRotate(MahjongManager.Instance.GetRotationNaki(myPlayerKind));
 
         DeleteForNaki(index3);
         DeleteForNaki(index2);
@@ -627,6 +665,7 @@ public class PlayerTehai : MonoBehaviour
 
         int _nakiCount = (13 - myTehais.Count) / 3;
         _nakiPrefab.ChangeTransformPosition(MahjongManager.Instance.GetPositionNaki(myPlayerKind, _nakiCount));
+        _nakiPrefab.ChangeTransformRotate(MahjongManager.Instance.GetRotationNaki(myPlayerKind));
 
         DeleteForNaki(index2);
         DeleteForNaki(index1);
@@ -651,7 +690,7 @@ public class PlayerTehai : MonoBehaviour
         switch (_chiNumber)
         {
             case NakiPrefab.PaiOfChi.Low:
-                _nakiKind = MahjongManager.NakiKinds.ChiNumSmall;
+                _nakiKind = MahjongManager.NakiKinds.ChiNumLow;
                 targetKind1 = _paiKind + 1;
                 targetKind2 = _paiKind + 2;
                 break;
@@ -661,7 +700,7 @@ public class PlayerTehai : MonoBehaviour
                 targetKind2 = _paiKind + 1;
                 break;
             case NakiPrefab.PaiOfChi.High:
-                _nakiKind = MahjongManager.NakiKinds.ChiNumBig;
+                _nakiKind = MahjongManager.NakiKinds.ChiNumHigh;
                 targetKind1 = _paiKind - 2;
                 targetKind2 = _paiKind - 1;
                 break;
@@ -698,6 +737,7 @@ public class PlayerTehai : MonoBehaviour
 
         int _nakiCount = (13 - myTehais.Count) / 3;
         _nakiPrefab.ChangeTransformPosition(MahjongManager.Instance.GetPositionNaki(myPlayerKind, _nakiCount));
+        _nakiPrefab.ChangeTransformRotate(MahjongManager.Instance.GetRotationNaki(myPlayerKind));
 
         DeleteForNaki(index2);
         DeleteForNaki(index1);
@@ -705,6 +745,18 @@ public class PlayerTehai : MonoBehaviour
         RiiPai();
 
         MahjongManager.Instance.ReceptionPlayerTehaiForNaki(myPlayerKind, false);
+    }
+
+    /// <summary>
+    /// 手牌をすべてオープンする
+    /// </summary>
+    public void OpenMyTehaiAll()
+    {
+        Vector3 vec = MahjongManager.Instance.GetRotation(myPlayerKind, false, false);
+        foreach(var item in myTehais)
+        {
+            item.myPaiPrefab.ChangeTransformRotate(vec);
+        }
     }
 
     /// <summary>
@@ -1153,6 +1205,22 @@ public class PlayerTehai : MonoBehaviour
         foreach(var item in myNakis)
         {
             resultList.Add(item.myNakiPrefab.GetMyMentsuStatus());
+        }
+
+        return resultList;
+    }
+
+    /// <summary>
+    /// 鳴きのメンツリスト(手牌に用いる用)を返すゲッター
+    /// </summary>
+    /// <returns></returns>
+    public List<NakiPrefab> GetNakisForTehai()
+    {
+        List<NakiPrefab> resultList = new List<NakiPrefab>();
+
+        foreach (var item in myNakis)
+        {
+            resultList.Add(item.myNakiPrefab);
         }
 
         return resultList;

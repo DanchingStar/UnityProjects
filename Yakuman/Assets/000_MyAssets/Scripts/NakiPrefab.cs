@@ -12,6 +12,7 @@ public class NakiPrefab : MonoBehaviour
 
     protected MahjongManager.NakiKinds myNakiKind;
     protected MahjongManager.MentsuStatus myMentsuStatus;
+    protected MinkanKind minkanKind;
 
     protected bool kanFlg;
 
@@ -43,6 +44,13 @@ public class NakiPrefab : MonoBehaviour
         Other3,
     }
 
+    public enum MinkanKind
+    {
+        None,
+        Daiminkan,
+        Kakan
+    }
+
     protected void Start()
     {
         if (startFinifhFlg) return;
@@ -57,6 +65,19 @@ public class NakiPrefab : MonoBehaviour
 
         nakiPlace = _nakiPlace;
         myNakiKind = _myNakiKind;
+
+        if (myNakiKind == MahjongManager.NakiKinds.DaiminkanFromKamicha || 
+            myNakiKind == MahjongManager.NakiKinds.DaiminkanFromToimen  || 
+            myNakiKind == MahjongManager.NakiKinds.DaiminkanFromShimocha )
+        {
+            minkanKind = MinkanKind.Daiminkan;
+        }
+        else
+        {
+            minkanKind= MinkanKind.None;
+        }
+
+        //Debug.Log($"SetStatusFirst : _myNakiKind = {_myNakiKind}");
     }
 
     public void SetPaiPrefab(PaiPrefabKind _paiPrefabKind,
@@ -151,6 +172,8 @@ public class NakiPrefab : MonoBehaviour
     public void Kakan(PaiPrefabKind _paiPrefabKind,
         MahjongManager.PaiKinds _thisKind, int _totalNumber, int _arrayNumber, MahjongManager.PlayerKind _tehaiFlg)
     {
+        minkanKind = MinkanKind.Kakan;
+
         if (myNakiKind == MahjongManager.NakiKinds.PonFromShimocha)
         {
             myNakiKind = MahjongManager.NakiKinds.KakanFromShimocha;
@@ -185,6 +208,28 @@ public class NakiPrefab : MonoBehaviour
         transform.localRotation = Quaternion.Euler(_rotate);
     }
 
+    public NakiPlace GetNakiPlace()
+    {
+        return nakiPlace;
+    }
+
+    public MinkanKind GetMinkanKind()
+    {
+        return minkanKind;
+    }
+
+    public PaiPrefab GetPaiPrefabForChi(int _paiPlace)
+    {
+        if (0 <= _paiPlace && _paiPlace <= 2)
+        {
+            return paiPrefabs[_paiPlace];
+        }
+        else
+        {
+            return null;
+        }
+    }
+
     public MahjongManager.MentsuStatus GetMyMentsuStatus()
     {
         return myMentsuStatus;
@@ -196,6 +241,7 @@ public class NakiPrefab : MonoBehaviour
     public void InspectorButtonFunction()
     {
         Debug.Log($"InspectorButtonFunction : Display NakiPrefab MentsuStatus\n" +
+            $"nakiPlace = {nakiPlace}\n" +
             $"minimumPai = {myMentsuStatus.minimumPai}\n" +
             $"tanyao = {myMentsuStatus.tanyao}\n" +
             $"mentsuKind = {myMentsuStatus.mentsuKind}\n" +

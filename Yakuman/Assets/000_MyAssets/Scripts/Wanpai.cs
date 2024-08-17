@@ -6,6 +6,7 @@ public class Wanpai : MonoBehaviour
 {
     private PaiPrefab[] doraDisplays;
     private int nowKanIndex;
+    private List<MahjongManager.PaiKinds> doraHyoujiList;
 
     private const int COUNT_DORA = 5;
     private const int COUNT_PAI = 136;
@@ -17,6 +18,7 @@ public class Wanpai : MonoBehaviour
     {
         doraDisplays = new PaiPrefab[COUNT_DORA];
         nowKanIndex = 0;
+        doraHyoujiList = new List<MahjongManager.PaiKinds>();
     }
 
     /// <summary>
@@ -63,7 +65,10 @@ public class Wanpai : MonoBehaviour
     /// <param name="_openPlace"></param>
     private void AddDoraDisplay(int _openPlace)
     {
+        //Debug.Log($"AddDoraDisplay : _openPlace = {_openPlace}");
+
         doraDisplays[_openPlace].ChangeTransformRotate(MahjongManager.Instance.GetRotation(MahjongManager.PlayerKind.Other, false, false));
+        doraHyoujiList.Add(doraDisplays[_openPlace].GetThisKind()); // ドラ表示牌リストに追加
     }
 
     /// <summary>
@@ -82,6 +87,17 @@ public class Wanpai : MonoBehaviour
         pai.ChangeTransformRotate(_rotation);
 
         return pai;
+    }
+
+    /// <summary>
+    /// ドラ表示牌のリストを返すゲッター
+    /// </summary>
+    /// <returns></returns>
+    public List<MahjongManager.PaiKinds> GetDoraHyoujiList()
+    {
+        //Debug.Log($"GetDoraHyoujiList : {string.Join(",",doraHyoujiList)}");
+
+        return doraHyoujiList;
     }
 
 }

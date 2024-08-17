@@ -101,21 +101,48 @@ public class PlayerKawa : MonoBehaviour
     /// <returns></returns>
     public bool CheckFuriten(int[] _tehaiInformation , MahjongManager.PlayerKind _ronPlayerKind)
     {
+        bool furitenFlg = false;
+        MahjongManager.PaiKinds furitenPai = MahjongManager.PaiKinds.None_00;
+
         List<PaiStatusForKawa> copyKawaList = new List<PaiStatusForKawa>(myKawas);
 
+        MahjongManager.PlayerKind migi = (int)myPlayerKind + 1 > (int)MahjongManager.PlayerKind.Kamicha ?
+            myPlayerKind - 4 + 1 : myPlayerKind + 1;
+        MahjongManager.PlayerKind mae = (int)myPlayerKind + 2 > (int)MahjongManager.PlayerKind.Kamicha ?
+            myPlayerKind - 4 + 2 : myPlayerKind + 2;
+        MahjongManager.PlayerKind hidari = (int)myPlayerKind + 3 > (int)MahjongManager.PlayerKind.Kamicha ?
+            myPlayerKind - 4 + 3 : myPlayerKind + 3;
+
         // 同巡フリテンの可能性を追加
-        if (_ronPlayerKind == MahjongManager.PlayerKind.Shimocha)
+        if (_ronPlayerKind == migi)
         {
             // なし
         }
-        else if (_ronPlayerKind == MahjongManager.PlayerKind.Toimen)
+        else if (_ronPlayerKind == mae)
         {
-            copyKawaList.Add(MahjongManager.Instance.GetPlayerKawaComponent(MahjongManager.PlayerKind.Shimocha).GetLastSutePai());
+            PaiStatusForKawa lastPai = MahjongManager.Instance.GetPlayerKawaComponent(migi).GetLastSutePai();
+            if (lastPai != null)
+            {
+                copyKawaList.Add(lastPai);
+            }
         }
-        else if (_ronPlayerKind == MahjongManager.PlayerKind.Kamicha)
+        else if (_ronPlayerKind == hidari)
         {
-            copyKawaList.Add(MahjongManager.Instance.GetPlayerKawaComponent(MahjongManager.PlayerKind.Shimocha).GetLastSutePai());
-            copyKawaList.Add(MahjongManager.Instance.GetPlayerKawaComponent(MahjongManager.PlayerKind.Toimen).GetLastSutePai());
+            PaiStatusForKawa lastPai1 = MahjongManager.Instance.GetPlayerKawaComponent(migi).GetLastSutePai();
+            if (lastPai1 != null)
+            {
+                copyKawaList.Add(lastPai1);
+            }
+            PaiStatusForKawa lastPai2 = MahjongManager.Instance.GetPlayerKawaComponent(mae).GetLastSutePai();
+            if (lastPai2 != null)
+            {
+                copyKawaList.Add(lastPai2);
+            }
+        }
+        else
+        {
+            Debug.LogError($"CheckFuriten : Error , myPlayerKind = {myPlayerKind} , ronPlayerKind = {_ronPlayerKind}\n" +
+                $"migi = {migi} , mae = {mae} , hidari = {hidari}");
         }
 
         copyKawaList.Sort((a, b) => a.myPaiStatus.totalNumber.CompareTo(b.myPaiStatus.totalNumber));
@@ -130,27 +157,19 @@ public class PlayerKawa : MonoBehaviour
             System.Array.Copy(_tehaiInformation, copyTehaiInformation, _tehaiInformation.Length);
             copyTehaiInformation[(int)item.myPaiStatus.thisKind]++;
 
-            //string logStr = $"CheckFuriten : Display Log of copyTehaiInformation\nCheck OaiKind = [{item}]";
-            //for (int i = 0; i < copyTehaiInformation.Length; i++)
-            //{
-            //    if (i % 10 == 0)
-            //    {
-            //        if (i == 0) logStr += "\nM : ";
-            //        else if (i == 10) logStr += "\nP : ";
-            //        else if (i == 20) logStr += "\nS : ";
-            //        else if (i == 30) logStr += "\nJ : ";
-            //    }
-            //    else
-            //    {
-            //        logStr += $"{copyTehaiInformation[i]}, ";
-            //    }
-            //}
-            //Debug.Log($"{logStr}");
-
-            if (MahjongManager.Instance.CheckAgariAll(copyTehaiInformation)) return true;
+            if (MahjongManager.Instance.CheckAgariAll(copyTehaiInformation))
+            {
+                furitenFlg = true;
+                furitenPai = item.myPaiStatus.thisKind;
+                break;
+            }
         }
 
-        return false;
+        string logStr = $"CheckFuriten : Furiten is {furitenFlg} , myPlayerKind = {myPlayerKind} , ronPlayerKind = {_ronPlayerKind}\nmigi = {migi} , mae = {mae} , hidari = {hidari}";
+        if (furitenFlg) logStr += $" , furitenPai = {furitenPai}";
+        Debug.Log(logStr);
+
+        return furitenFlg;
     }
 
     /// <summary>
@@ -159,7 +178,15 @@ public class PlayerKawa : MonoBehaviour
     /// <returns></returns>
     public PaiStatusForKawa GetLastSutePai()
     {
-        var result = myKawas[myKawas.Count - 1];
+        PaiStatusForKawa result;
+        if (myKawas.Count > 0)
+        {
+            result = myKawas[myKawas.Count - 1];
+        }
+        else
+        {
+            result = null;
+        }
         //Debug.Log($"GetLastSutePai : PlayerKind = {myPlayerKind} , Sutehai {result.myPaiStatus.thisKind}");
         return result;
     }
@@ -174,6 +201,15 @@ public class PlayerKawa : MonoBehaviour
     }
 
     /// <summary>
+    /// 川の牌情報を返すゲッター
+    /// </summary>
+    /// <returns></returns>
+    public List<PaiStatusForKawa> GetKawaAll()
+    {
+        return myKawas;
+    }
+
+    /// <summary>
     /// 牌からオーラが出るエフェクト
     /// </summary>
     /// <param name="_flg"></param>
@@ -184,6 +220,15 @@ public class PlayerKawa : MonoBehaviour
             ronPaiAuraFlg = _flg;
             GetLastSutePai().myPaiPrefab.PlayParticleAura(ronPaiAuraFlg);
         }
+    }
+
+    /// <summary>
+    /// 鳴き候補の牌を目立たせる
+    /// </summary>
+    /// <param name="_flg"></param>
+    public void SetNakiPaiObjects(bool _flg)
+    {
+        if (GetLastSutePai() != null) GetLastSutePai().myPaiPrefab.PlayNakiObjects(_flg);
     }
 
 
