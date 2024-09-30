@@ -2,26 +2,44 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UiManagerForGameScene : MonoBehaviour
 {
     [SerializeField] private GameObject uiForBeforeGame;
     [SerializeField] private GameObject uiForPlayingGame;
 
+    [SerializeField] private Button gameStartButton;
+
     [SerializeField] private TextMeshProUGUI gameModeText;
     [SerializeField] private TextMeshProUGUI gameModeInformationText;
 
+    [SerializeField] private TextMeshProUGUI mainInformationMainText;
     [SerializeField] private TextMeshProUGUI kyokuText;
     [SerializeField] private TextMeshProUGUI honbaText;
     [SerializeField] private TextMeshProUGUI nokoriCountText;
     [SerializeField] private GameObject uiNakiPrefab;
     [SerializeField] private GameObject uiTurnActionPrefab;
     [SerializeField] private GameObject uiKyokuFinishPanelPrefab;
+    [SerializeField] private GameObject uiNakiVoicePrefab;
+
+    [SerializeField] private Transform nakiVoiceParentTf;
 
     private UiTurnActionPrefab activeUiTurnActionPrefab = null;
 
+    private GameModeManager.GameMode gameMode;
+
     private void Start()
     {
+
+    }
+
+    private void Update()
+    {
+        if (gameMode == GameModeManager.GameMode.TimeAttack)
+        {
+            ChangeMainInformationMainText();
+        }
     }
 
     /// <summary>
@@ -31,6 +49,7 @@ public class UiManagerForGameScene : MonoBehaviour
     {
         ChangeUiForPlayingGameSetActive(true);
         ReceptionPlayerSute();
+        ChangeMenuArea();
         ChangeKyokuText("");
     }
 
@@ -71,6 +90,46 @@ public class UiManagerForGameScene : MonoBehaviour
     private void ChangeGameModeText(GameModeManager.GameMode _gameMode)
     {
         ChangeGameModeText(_gameMode.ToString());
+    }
+
+    /// <summary>
+    /// メニューエリアのUIを変える
+    /// </summary>
+    private void ChangeMenuArea()
+    {
+        gameMode = GameModeManager.Instance.GetGameMode();
+        ChangeMainInformationMainText();
+    }
+
+    /// <summary>
+    /// メニューエリアのメインテキストを変える
+    /// </summary>
+    private void ChangeMainInformationMainText()
+    {
+        if (gameMode == GameModeManager.GameMode.TimeAttack)
+        {
+            float timeAttackTimer = GameModeManager.Instance.GetTimeAttackScoreTimer();
+            System.TimeSpan timeSpan = System.TimeSpan.FromSeconds(timeAttackTimer);
+            //string formattedTime = string.Format("{0:D2}:{1:D2}.{2:D2}", timeSpan.Minutes, timeSpan.Seconds, (int)(timeSpan.Milliseconds / 10)); //少数点以下2ケタ
+            string formattedTime = string.Format("{0:D2}:{1:D2}.{2}", timeSpan.Minutes, timeSpan.Seconds, (int)(timeSpan.Milliseconds / 100)); //少数点以下1ケタ
+            mainInformationMainText.text = $"{formattedTime}";
+        }
+        else if (gameMode == GameModeManager.GameMode.Puzzle)
+        {
+            mainInformationMainText.text = $"ステージ {GameModeManager.Instance.GetStatusForPuzzle().stageNumber}";
+        }
+        else if (gameMode == GameModeManager.GameMode.Free)
+        {
+            mainInformationMainText.text = $"フリーモード";
+        }
+        else if (gameMode == GameModeManager.GameMode.Debug)
+        {
+            mainInformationMainText.text = $"デバッグ";
+        }
+        else
+        {
+            mainInformationMainText.text = $"? ? ?";
+        }
     }
 
     /// <summary>
@@ -207,12 +266,23 @@ public class UiManagerForGameScene : MonoBehaviour
     }
 
     /// <summary>
-    /// 鳴いた時に表示するUIを生成する
+    /// 鳴きを選択するUIを生成する
     /// </summary>
     /// <returns></returns>
     private UiNakiPrefab InstatinateUiNakiPrefab()
     {
         UiNakiPrefab _prefab = Instantiate(uiNakiPrefab, transform).GetComponent<UiNakiPrefab>();
+
+        return _prefab;
+    }
+
+    /// <summary>
+    /// 鳴いたときに表示する発声のUIを生成する
+    /// </summary>
+    /// <returns></returns>
+    private UiNakiVoice InstatinateUiNakiVoicePrefab()
+    {
+        UiNakiVoice _prefab = Instantiate(uiNakiVoicePrefab, nakiVoiceParentTf).GetComponent<UiNakiVoice>();
 
         return _prefab;
     }
@@ -240,7 +310,7 @@ public class UiManagerForGameScene : MonoBehaviour
     }
 
     /// <summary>
-    /// 鳴いた時に表示するUIを表示する
+    /// 鳴きを選択するUIを表示する
     /// </summary>
     /// <param name="_chiLow"></param>
     /// <param name="_chiMid"></param>
@@ -255,6 +325,27 @@ public class UiManagerForGameScene : MonoBehaviour
         MahjongManager.Instance.ReceptionUiNakiPrefabForChangeNakiWaitFlg(true);
         var prefab = InstatinateUiNakiPrefab();
         prefab.SetMyStatus(_chiLow, _chiMid, _chiHigh, _pon, _kan, _ron, _friten, _sutePai);
+    }
+
+    /// <summary>
+    /// 鳴いたときに表示する発声のUIを表示する
+    /// </summary>
+    /// <param name="_nakiKind"></param>
+    /// <param name="_playerKind"></param>
+    public UiNakiVoice DisplayNakiVoice(MahjongManager.NakiKinds _nakiKind, MahjongManager.PlayerKind _playerKind)
+    {
+        var prefab = InstatinateUiNakiVoicePrefab();
+        prefab.DisplayMe(_nakiKind, _playerKind);
+        return prefab;
+    }
+
+    /// <summary>
+    /// 鳴いたときに表示する発声のUIを破壊する
+    /// </summary>
+    /// <param name="_uiNakiVoicePrefab"></param>
+    public void DestroyNakiVoice(UiNakiVoice _uiNakiVoicePrefab)
+    {
+        _uiNakiVoicePrefab.DestroyMe();
     }
 
     /// <summary>

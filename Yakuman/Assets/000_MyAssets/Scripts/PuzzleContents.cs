@@ -4,15 +4,11 @@ using UnityEngine;
 
 public class PuzzleContents : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    [SerializeField] private PuzzleStageGenerator puzzleStageGenerator;
+
+    public PuzzleStageGenerator GetPuzzleStageGenerator()
     {
-        
+        return puzzleStageGenerator;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

@@ -107,8 +107,10 @@ public class PlayerTehai : MonoBehaviour
         int roopIndex = 0;
         foreach (var item in myTehais)
         {
-            var pai = InstantiateTehai(item.myPaiStatus, item.masterArrayNumber,
-                MahjongManager.Instance.GetPositionTehai(myPlayerKind, roopIndex, false), MahjongManager.Instance.GetRotation(myPlayerKind, true, false));
+            Vector3 pos = MahjongManager.Instance.GetPositionTehai(myPlayerKind, roopIndex, false);
+            Vector3 rot = MahjongManager.Instance.GetRotation(myPlayerKind, !GameModeManager.Instance.GetTehaiOpenGame(), false);
+
+            var pai = InstantiateTehai(item.myPaiStatus, item.masterArrayNumber, pos, rot);
 
             item.myPaiPrefab = pai;
             item.myPaiObject = pai.gameObject;
@@ -193,8 +195,10 @@ public class PlayerTehai : MonoBehaviour
 
         AddTehai(_pai, _masterArrayNumber);
 
-        var pai = InstantiateTehai(myTehais[index].myPaiStatus, myTehais[index].masterArrayNumber,
-            MahjongManager.Instance.GetPositionTehai(myPlayerKind, index, true), MahjongManager.Instance.GetRotation(myPlayerKind, true, false));
+        Vector3 pos = MahjongManager.Instance.GetPositionTehai(myPlayerKind, index, true);
+        Vector3 rot = MahjongManager.Instance.GetRotation(myPlayerKind, !GameModeManager.Instance.GetTehaiOpenGame(), false);
+
+        var pai = InstantiateTehai(myTehais[index].myPaiStatus, myTehais[index].masterArrayNumber, pos, rot);
 
         myTehais[index].myPaiPrefab = pai;
         myTehais[index].myPaiObject = pai.gameObject;
@@ -287,7 +291,14 @@ public class PlayerTehai : MonoBehaviour
             }
             else // リーチしていないとき
             {
-                result = GameModeManager.Instance.GetCpu(myPlayerKind).Naki(_sutePai, tehaiInformation, myNakis, myPlayerKind, _sutePlayer);
+                if (GameModeManager.Instance.GetCpuNakiActive(myPlayerKind))
+                {
+                    result = GameModeManager.Instance.GetCpu(myPlayerKind).Naki(_sutePai, tehaiInformation, myNakis, myPlayerKind, _sutePlayer);
+                }
+                else
+                {
+                    result = MahjongManager.NakiKinds.Through;
+                }
             }
         }
 

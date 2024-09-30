@@ -7,8 +7,11 @@ public class PlayerKawa : MonoBehaviour
     /// <summary>自身のプレイヤーの種類</summary>
     [SerializeField] private MahjongManager.PlayerKind myPlayerKind;
 
-    /// <summary>手牌情報</summary>
+    /// <summary>河情報</summary>
     private List<PaiStatusForKawa> myKawas;
+
+    /// <summary>鳴かれた牌の情報</summary>
+    private List<PaiStatusForKawa> myDeletedKawas;
 
     /// <summary>ロン可能な場合にオーラが出る演出を実施したフラグ</summary>
     private bool ronPaiAuraFlg;
@@ -40,6 +43,7 @@ public class PlayerKawa : MonoBehaviour
     public void ResetKawa()
     {
         myKawas = new List<PaiStatusForKawa>();
+        myDeletedKawas = new List<PaiStatusForKawa>();
         ronPaiAuraFlg = false;
     }
 
@@ -70,9 +74,11 @@ public class PlayerKawa : MonoBehaviour
     public void RemoveKawaLast()
     {
         int index = myKawas.Count - 1;
+        var pai = myKawas[index];
 
-        Destroy(myKawas[index].myPaiObject);
-        myKawas.Remove(myKawas[index]);
+        Destroy(pai.myPaiObject);
+        myDeletedKawas.Add(pai);
+        myKawas.Remove(pai);
     }
 
     /// <summary>
@@ -105,6 +111,9 @@ public class PlayerKawa : MonoBehaviour
         MahjongManager.PaiKinds furitenPai = MahjongManager.PaiKinds.None_00;
 
         List<PaiStatusForKawa> copyKawaList = new List<PaiStatusForKawa>(myKawas);
+
+        // 鳴かれた牌も足す
+        foreach (var item in myDeletedKawas) copyKawaList.Add(item);
 
         MahjongManager.PlayerKind migi = (int)myPlayerKind + 1 > (int)MahjongManager.PlayerKind.Kamicha ?
             myPlayerKind - 4 + 1 : myPlayerKind + 1;
@@ -167,7 +176,7 @@ public class PlayerKawa : MonoBehaviour
 
         string logStr = $"CheckFuriten : Furiten is {furitenFlg} , myPlayerKind = {myPlayerKind} , ronPlayerKind = {_ronPlayerKind}\nmigi = {migi} , mae = {mae} , hidari = {hidari}";
         if (furitenFlg) logStr += $" , furitenPai = {furitenPai}";
-        Debug.Log(logStr);
+        //Debug.Log(logStr);
 
         return furitenFlg;
     }

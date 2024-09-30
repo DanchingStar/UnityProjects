@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetCamera: {fileID: 8907069015582558807}
-  aspectVec: {x: 1920, y: 1080}
+  aspectVec: {x: 1080, y: 1920}
 --- !u!114 &2010323913292317013
 MonoBehaviour:
   m_ObjectHideFlags: 0

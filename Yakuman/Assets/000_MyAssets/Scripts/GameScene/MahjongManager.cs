@@ -269,9 +269,13 @@ public class MahjongManager : MonoBehaviour
 
     #region _Region【宣言(const,readonly)】
 
+    private const string NAME_SCENE_GAME = "Game";
+    private const string NAME_SCENE_PUZZLE_MAKER = "PuzzleMaker";
+
     private const int DEFAULT_MAISUU_TEHAI = 13;
     private const float TIME_TURN_INTERVAL = 0.5f;
-    private const float TIME_KAN_INTERVAL = 0.4f;
+    private const float TIME_NAKI_VOICE_INTERVAL = 0.5f;
+    //private const float TIME_KAN_INTERVAL = 0.4f;
     private const int COUNT_FINISH_TSUMO = 70;
     public const int INDEX_ERROR = -1;
     public const int INDEX_NONE = -20;
@@ -402,6 +406,7 @@ public class MahjongManager : MonoBehaviour
     [SerializeField] private PlayerTehai[] playerTehais;
     [SerializeField] private PlayerKawa[] playerKawas;
     [SerializeField] private Wanpai wanpai;
+    [SerializeField] private ShantenCheck shantenCheck;
 
     public List<PaiStatus> paiyama;
 
@@ -419,7 +424,9 @@ public class MahjongManager : MonoBehaviour
 
     private int clearCount;
 
-    private float gameTimer;
+    private float intervalTimer;
+
+    private string sceneName;
 
     #endregion
 
@@ -447,11 +454,27 @@ public class MahjongManager : MonoBehaviour
         UpdateFunction();
     }
 
+    /// <summary>
+    /// Startで走る関数
+    /// </summary>
     private void StartFunction()
     {
-        uiManager.DisplayBeforeGame();
+        sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 
-        receptionNakiCheck = new NakiKinds[playerTehais.Length];
+        if(sceneName == NAME_SCENE_GAME)
+        {
+            uiManager.DisplayBeforeGame();
+
+            receptionNakiCheck = new NakiKinds[playerTehais.Length];
+        }
+        else if (sceneName == NAME_SCENE_PUZZLE_MAKER)
+        {
+
+        }
+        else
+        {
+            Debug.LogError($"StartFunction : Error , Scene Name is {sceneName}");
+        }
     }
 
     /// <summary>
@@ -459,48 +482,55 @@ public class MahjongManager : MonoBehaviour
     /// </summary>
     private void UpdateFunction()
     {
-        if (nowGameTurn == GameTurn.Ready)
+        if (sceneName == NAME_SCENE_GAME)
         {
-            //何もせず、待ち
-        }
-        else if (nowGameTurn == GameTurn.Finish_Ryuukyoku)
-        {
-            //何もせず、待ち
-        }
-        else if (nowGameTurn == GameTurn.Finish_Agari)
-        {
-            //何もせず、待ち
-        }
-        //else if (nowGameTurn == GameTurn.Player_Sute)
-        //{
-        //    CheckNakiDoing();
-        //}
-        else if (nowGameTurn != GameTurn.Player_Tsumo)
-        {
-            gameTimer += Time.deltaTime;
-
-            if (gameTimer > TIME_TURN_INTERVAL)
+            if (nowGameTurn == GameTurn.Ready)
             {
-                if (GetNowTurnTsumo() && nowGameTurn != GameTurn.Player_Tsumo)
-                {
-                    int playerIndex = (int)nowGameTurn / 2;
+                //何もせず、待ち
+            }
+            else if (nowGameTurn == GameTurn.Finish_Ryuukyoku)
+            {
+                //何もせず、待ち
+            }
+            else if (nowGameTurn == GameTurn.Finish_Agari)
+            {
+                //何もせず、待ち
+            }
+            //else if (nowGameTurn == GameTurn.Player_Sute)
+            //{
+            //    CheckNakiDoing();
+            //}
+            else if (nowGameTurn != GameTurn.Player_Tsumo)
+            {
+                intervalTimer += Time.deltaTime;
 
-                    if (playerTehais[playerIndex].GetAbleTsumoAgari())
+                if (intervalTimer > TIME_TURN_INTERVAL)
+                {
+                    if (GetNowTurnTsumo() && nowGameTurn != GameTurn.Player_Tsumo)
                     {
-                        KyokuFinishOfAgari(null, (PlayerKind)(playerIndex + 1));
+                        int playerIndex = (int)nowGameTurn / 2;
+
+                        if (playerTehais[playerIndex].GetAbleTsumoAgari())
+                        {
+                            KyokuFinishOfAgari(null, (PlayerKind)(playerIndex + 1));
+                        }
+                        else
+                        {
+                            playerTehais[playerIndex].SuteThink(); // 評価値を計算して捨てる
+                        }
                     }
                     else
                     {
-                        playerTehais[playerIndex].SuteThink(); // 評価値を計算して捨てる
+                        if (!playerNakiWaitFlg) CheckNakiDoing();
                     }
-                }
-                else
-                {
-                    if (!playerNakiWaitFlg) CheckNakiDoing();
-                }
 
-                gameTimer = 0f;
+                    intervalTimer = 0f;
+                }
             }
+        }
+        else if (sceneName == NAME_SCENE_PUZZLE_MAKER)
+        {
+
         }
     }
 
@@ -567,7 +597,11 @@ public class MahjongManager : MonoBehaviour
                 break;
             case GameModeManager.GameMode.Puzzle:
                 {
+                    // 牌山を生成する
+                    MakePaiyamaInit();
 
+                    // イカサマする。イカサマした牌の数が返り値
+                    int ikasamaCounter = IkasamaContentsForSupport(GameModeManager.Instance.GetStatusForPuzzle().yama);
                 }
                 break;
             case GameModeManager.GameMode.Free:
@@ -644,7 +678,7 @@ public class MahjongManager : MonoBehaviour
             default:
                 {
                     Debug.LogError($"MakePaiYama : Error! , GameMode = {GameModeManager.Instance.GetGameMode()} , Change Mode Free");
-                    GameModeManager.Instance.SetGameModeFree(false);
+                    GameModeManager.Instance.SetGameModeFree(false, false);
                 }
                 return false;
         }
@@ -746,7 +780,7 @@ public class MahjongManager : MonoBehaviour
         alreadyNakiFlg = true;
         turnActionFlg = TurnActionKind.None;
 
-        gameTimer = 0;
+        intervalTimer = 0;
 
         ResetTransformObjects();
         ResetPlayersTehaisAndKawas();
@@ -1669,7 +1703,34 @@ public class MahjongManager : MonoBehaviour
         else if (nowGameTurn == GameTurn.Ready)
         {
             // ここを変えると親が変わる
-            nowGameTurn = GameTurn.Player_Tsumo;
+            if(GameModeManager.Instance.GetGameMode() == GameModeManager.GameMode.Puzzle)
+            {
+                PlayerKind oyaKouho = GameModeManager.Instance.GetStatusForPuzzle().oya;
+                if(oyaKouho == PlayerKind.Player)
+                {
+                    nowGameTurn = GameTurn.Player_Tsumo;
+                }
+                else if (oyaKouho == PlayerKind.Shimocha)
+                {
+                    nowGameTurn = GameTurn.Shimocha_Tsumo;
+                }
+                else if (oyaKouho == PlayerKind.Toimen)
+                {
+                    nowGameTurn = GameTurn.Toimen_Tsumo;
+                }
+                else if (oyaKouho == PlayerKind.Kamicha)
+                {
+                    nowGameTurn = GameTurn.Kamicha_Tsumo;
+                }
+                else
+                {
+                    nowGameTurn = GameTurn.Player_Tsumo;
+                }
+            }
+            else
+            {
+                nowGameTurn = GameTurn.Player_Tsumo;
+            }
         }
         else
         {
@@ -1886,7 +1947,7 @@ public class MahjongManager : MonoBehaviour
         {
             if (receptionNakiCheck[i] == NakiKinds.None)
             {
-                Debug.LogWarning($"CheckNakiDoing : {(PlayerKind)(i + 1)} is None");
+                //Debug.LogWarning($"CheckNakiDoing : {(PlayerKind)(i + 1)} is None");
                 return;
             }
             else if (receptionNakiCheck[i] == NakiKinds.Through)
@@ -1910,7 +1971,7 @@ public class MahjongManager : MonoBehaviour
         {
             int playerIndex = nakiHopePlayerList[0];
             ExecuteNaki(playerIndex, receptionNakiCheck[playerIndex]);
-            Debug.Log($"CheckNakiDoing : Naki = {(PlayerKind)(playerIndex + 1)} , {receptionNakiCheck[playerIndex]}");
+            //Debug.Log($"CheckNakiDoing : Naki = {(PlayerKind)(playerIndex + 1)} , {receptionNakiCheck[playerIndex]}");
             ResetReceptionNakiCheck();
             return;
         }
@@ -1943,14 +2004,27 @@ public class MahjongManager : MonoBehaviour
                     break;
                 }
             }
-            Debug.Log(logStr);
+            //Debug.Log(logStr);
         }
     }
 
     /// <summary>
     /// 鳴きを実行する
     /// </summary>
+    /// <param name="_nakiPlayerIndex"></param>
+    /// <param name="_nakiKind"></param>
     private void ExecuteNaki(int _nakiPlayerIndex, NakiKinds _nakiKind)
+    {
+        StartCoroutine(ExecuteNakiCoroutine(_nakiPlayerIndex, _nakiKind));
+    }
+
+    /// <summary>
+    /// 鳴きを実行するときのコルーチン
+    /// </summary>
+    /// <param name="_nakiPlayerIndex"></param>
+    /// <param name="_nakiKind"></param>
+    /// <returns></returns>
+    private IEnumerator ExecuteNakiCoroutine(int _nakiPlayerIndex, NakiKinds _nakiKind)
     {
         int sutePlayerIndex = (int)nowGameTurn / 2 - 1;
         var sutePai = playerKawas[sutePlayerIndex].GetLastSutePai();
@@ -1959,10 +2033,14 @@ public class MahjongManager : MonoBehaviour
 
         if (_nakiKind == NakiKinds.Ron)
         {
-            KyokuFinishOfAgari(sutePai.myPaiStatus , (PlayerKind)(_nakiPlayerIndex + 1));
+            KyokuFinishOfAgari(sutePai.myPaiStatus, (PlayerKind)(_nakiPlayerIndex + 1));
         }
         else
         {
+            var _prefab = uiManager.DisplayNakiVoice(_nakiKind, (PlayerKind)(_nakiPlayerIndex + 1));
+            yield return new WaitForSeconds(TIME_NAKI_VOICE_INTERVAL);
+            uiManager.DestroyNakiVoice(_prefab);
+
             playerKawas[sutePlayerIndex].RemoveKawaLast();
 
             if (_nakiKind == NakiKinds.Pon)
@@ -2101,9 +2179,20 @@ public class MahjongManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator ActionKanCoroutine(PlayerKind _playerKind, bool _nakiFlg)
     {
-        yield return new WaitForSeconds(TIME_KAN_INTERVAL);
+        if (_nakiFlg)
+        {
 
-        if(_playerKind == PlayerKind.Player)
+        }
+        else
+        {
+            var _prefab = uiManager.DisplayNakiVoice(NakiKinds.Ankan, _playerKind);
+            yield return new WaitForSeconds(TIME_NAKI_VOICE_INTERVAL);
+            uiManager.DestroyNakiVoice(_prefab);
+        }
+
+        //yield return new WaitForSeconds(TIME_KAN_INTERVAL);
+
+        if (_playerKind == PlayerKind.Player)
         {
             PlayerActionTurn(_nakiFlg, true, _playerKind);
         }
@@ -2219,7 +2308,7 @@ public class MahjongManager : MonoBehaviour
         {
             if (i % 10 == 0 && _tehaiInformationList[i] != 0)
             {
-                Debug.LogWarning($"CheckAgari : Data Error , _tehaiInformationList[i] = {_tehaiInformationList[i]}");
+                Debug.LogWarning($"CheckAgari : Data Error , i = {i} , _tehaiInformationList[i] = {_tehaiInformationList[i]}");
                 return false;
             }
 
@@ -2575,18 +2664,27 @@ public class MahjongManager : MonoBehaviour
     /// <param name="_ronPai">ツモったときはnull</param>
     private void KyokuFinishOfAgari(PaiStatus _ronPai , PlayerKind _agariPlayerKind)
     {
+        StartCoroutine(KyokuFinishOfAgariCoroutine(_ronPai, _agariPlayerKind));
+    }
+
+    /// <summary>
+    /// 局が和了で終わったときのコルーチン
+    /// </summary>
+    /// <param name="_ronPai"></param>
+    /// <param name="_agariPlayerKind"></param>
+    /// <returns></returns>
+    private IEnumerator KyokuFinishOfAgariCoroutine(PaiStatus _ronPai, PlayerKind _agariPlayerKind)
+    {
         nowGameTurn = GameTurn.Finish_Agari;
 
         GetPlayerTehaiComponent(_agariPlayerKind).OpenMyTehaiAll();
 
-        if (_ronPai == null) //ツモ和了
-        {
-            uiManager.ReceptionMahjongManagerForAgari(_agariPlayerKind, null);
-        }
-        else ////ロン和了
-        {
-            uiManager.ReceptionMahjongManagerForAgari(_agariPlayerKind, _ronPai);
-        }
+        NakiKinds agariKind = _ronPai == null ? NakiKinds.None : NakiKinds.Ron;
+        var _prefab = uiManager.DisplayNakiVoice(agariKind, _agariPlayerKind);
+        yield return new WaitForSeconds(TIME_NAKI_VOICE_INTERVAL);
+        uiManager.DestroyNakiVoice(_prefab);
+
+        uiManager.ReceptionMahjongManagerForAgari(_agariPlayerKind, _ronPai);
     }
 
     /// <summary>
@@ -3540,9 +3638,18 @@ public class MahjongManager : MonoBehaviour
         ResetKyoku(false);
     }
 
-#endregion
+    #endregion
 
 #region ゲッター
+
+    /// <summary>
+    /// UiManagerForGameSceneを返すゲッター
+    /// </summary>
+    /// <returns></returns>
+    public UiManagerForGameScene GetUIManager()
+    {
+        return uiManager;
+    }
 
     /// <summary>
     /// 麻雀牌の柄のマテリアルを返すゲッター
@@ -4188,22 +4295,84 @@ public class MahjongManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 場に見えている牌のリストから、引数の牌の枚数を返すゲッター
+    /// 場に見えている牌のリストから、それぞれの枚数を配列にして返すゲッター
     /// </summary>
-    /// <param name="_paiKind">探したい牌の種類</param>
     /// <returns></returns>
-    public int GetLookPaiCount(PaiKinds _paiKind)
+    public int[] GetLookPaiCount()
     {
-        int counter = 0;
+        int[] result = new int[garaMaterials.Length];
 
         foreach(var item in GetLookPaiAll())
         {
-            if (_paiKind == item) counter++;
+            result[(int)item]++;
         }
 
-        //Debug.Log($"GetLookPaiCount : {_paiKind} counter = {counter}");
+        return result;
+    }
 
-        return counter;
+    /// <summary>
+    /// プレイヤーのシャンテン数を返すゲッター
+    /// </summary>
+    /// <param name="_playerKind"></param>
+    /// <returns></returns>
+    public int GetShantenSuu(PlayerKind _playerKind)
+    {
+        return shantenCheck.GetSyantenSuu(GetPlayerTehaiComponent(_playerKind).GetTehaiInformation());
+    }
+
+    /// <summary>
+    /// 手牌情報からシャンテン数を返すゲッター
+    /// </summary>
+    /// <param name="_tehaiInformation"></param>
+    /// <returns></returns>
+    public int GetShantenSuu(int[] _tehaiInformation)
+    {
+        return shantenCheck.GetSyantenSuu(_tehaiInformation);
+    }
+
+    /// <summary>
+    /// 手牌情報から孤立牌のリストを返すゲッター
+    /// </summary>
+    /// <param name="_tehaiInformation"></param>
+    /// <returns></returns>
+    public List<PaiKinds> GetKoritsuPaiList(int[] _tehaiInformation)
+    {
+        List<PaiKinds> resultList = new List<PaiKinds>();
+
+        foreach (var item in shantenCheck.GetKanzenKoritsuPaiList(_tehaiInformation))
+        {
+            resultList.Add((PaiKinds)item);
+        }
+
+        return resultList;
+    }
+
+    /// <summary>
+    /// 待ち牌のリストを返すゲッター
+    /// </summary>
+    /// <param name="_tehaiInformation"></param>
+    /// <returns></returns>
+    public List<PaiKinds> GetAgariMachiPaiList(int[] _tehaiInformation)
+    {
+        List<PaiKinds> resultList = new List<PaiKinds>();
+
+        for (int i = 0; i < _tehaiInformation.Length; i++)
+        {
+            if (i % 10 == 0) continue;
+
+            int[] copyArray = new int[_tehaiInformation.Length];
+            System.Array.Copy(_tehaiInformation, copyArray, _tehaiInformation.Length);
+
+            copyArray[i]++;
+
+            bool result = CheckAgariAll(copyArray);
+            if (result)
+            {
+                resultList.Add((PaiKinds)i);
+            }
+        }
+
+        return resultList;
     }
 
     /// <summary>
@@ -4462,24 +4631,16 @@ public class MahjongManager : MonoBehaviour
                     }
                 }
                 break;
-            case 3: // それっぽい局を開始する
+            case 3: // シャンテン数を出力する
                 {
-                    ResetTransformObjects();
-                    ResetPlayersTehaisAndKawas();
-                    uiManager.ResetUi();
-
-                    nowKyoku = Kyoku.Ton1;
-                    nowHonba = 0;
-
-                    UiManagerChangeKyokuText();
-
-                    ResetKyoku(true);
-
-                    DealHaiPai();
-
-                    wanpai.MakeDoraHyouji();
-
-                    StartCoroutine(ResetKyokuCoroutine());
+                    string str = "";
+                    for(int i = 0; i < 4; i++)
+                    {
+                        PlayerKind player = (PlayerKind)(i + 1);
+                        int num = GetShantenSuu(player);
+                        str += $"{player} : {num}\n";
+                    }
+                    Debug.Log($"{str}");
                 }
                 break;
             case 4: // なにで和了れるかを出力する

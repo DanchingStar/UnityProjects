@@ -14,11 +14,15 @@ public class Cpu_ChiToiTsu : CpuParent
         MahjongManager.PaiKinds result = MahjongManager.PaiKinds.None_00;
 
         int highPoint = -1;
+
+        int[] paiLookCounter = new int[38];
+        paiLookCounter = MahjongManager.Instance.GetLookPaiCount();
+
         for (int i = 0; i < _tehaiInformation.Length; i++)
         {
             if (_tehaiInformation[i] > 0)
             {
-                int thisPoint = ReturnBackPriorityPointForSute((MahjongManager.PaiKinds)i, _tehaiInformation);
+                int thisPoint = ReturnBackPriorityPointForSute((MahjongManager.PaiKinds)i, _tehaiInformation , paiLookCounter);
                 if (thisPoint > highPoint)
                 {
                     highPoint = thisPoint;
@@ -40,8 +44,9 @@ public class Cpu_ChiToiTsu : CpuParent
     /// </summary>
     /// <param name="_paiKind"></param>
     /// <param name="_tehaiInformation"></param>
+    /// <param name="_paiLookCounter"></param>
     /// <returns>’l‚ª‚‚¢‚Ù‚¤‚ªÌ‚Ä‚éŒó•â‚É‚È‚é</returns>
-    private int ReturnBackPriorityPointForSute(MahjongManager.PaiKinds _paiKind , int[] _tehaiInformation)
+    private int ReturnBackPriorityPointForSute(MahjongManager.PaiKinds _paiKind, int[] _tehaiInformation, int[] _paiLookCounter)
     {
         int point = 0;
 
@@ -69,9 +74,9 @@ public class Cpu_ChiToiTsu : CpuParent
 
             if (thisPaiCount < 2) // è”v‚É1–‡‚ ‚é
             {
-                int thisPaiLookCount = MahjongManager.Instance.GetLookPaiCount(_paiKind) + thisPaiCount; // ê‚Æè”v‚ÉŒ©‚¦‚Ä‚¢‚é–‡”
-
+                int thisPaiLookCount = _paiLookCounter[thisPaiIndex] + thisPaiCount; // ê‚Æè”v‚ÉŒ©‚¦‚Ä‚¢‚é–‡”
                 if (thisPaiLookCount > 4) Debug.LogWarning($"ReturnBackPriorityPointForSute : {_paiKind} thisPaiLookCount = {thisPaiLookCount}");
+
                 point = (thisPaiLookCount * 100) + (2 * paiValue);
             }
             else // è”v‚É3–‡ˆÈã‚ ‚é
